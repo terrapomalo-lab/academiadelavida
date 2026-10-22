@@ -30,7 +30,7 @@ fi
 say "2/8 Instalacija potrebnih programa (nekoliko minuta)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq python3 python3-venv git curl fonts-dejavu-core ca-certificates gnupg >/dev/null
+apt-get install -y -qq python3 python3-venv git curl sudo iproute2 fonts-dejavu-core ca-certificates gnupg >/dev/null
 if ! command -v caddy >/dev/null; then
   if ! apt-get install -y -qq caddy >/dev/null 2>&1; then
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
