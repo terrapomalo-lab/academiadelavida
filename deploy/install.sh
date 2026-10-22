@@ -44,7 +44,13 @@ id adv >/dev/null 2>&1 || useradd --system --home "$APP" --shell /usr/sbin/nolog
 mkdir -p "$DATA" "$BACKUPS"
 
 say "4/8 Preuzimanje stranice"
-if [ -d "$APP/.git" ]; then git -C "$APP" pull -q; else rm -rf "$APP"; git clone -q "$REPO" "$APP"; fi
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." 2>/dev/null && pwd || true)"
+if [ -n "$SRC" ] && [ -f "$SRC/app.py" ] && [ "$SRC" != "$APP" ]; then
+  # Pokrenuto iz raspakiranog zip-a: kopiraj datoteke (venv i evidencija ostaju netaknuti)
+  mkdir -p "$APP"
+  tar -C "$SRC" --exclude=venv --exclude=.git --exclude=data -cf - . | tar -C "$APP" -xf -
+elif [ -d "$APP/.git" ]; then git -C "$APP" pull -q
+else rm -rf "$APP"; git clone -q "$REPO" "$APP"; fi
 python3 -m venv "$APP/venv"
 "$APP/venv/bin/pip" install -q --upgrade pip
 "$APP/venv/bin/pip" install -q -r "$APP/requirements.txt"
