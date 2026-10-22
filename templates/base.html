@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="{{ t.html_lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Academia de la Vida{% endblock %}</title>
+<meta name="description" content="{{ t.meta_desc }}">
+<meta property="og:title" content="Academia de la Vida">
+<meta property="og:description" content="{{ t.meta_desc }}">
+<meta property="og:image" content="{{ cfg.BASE_URL }}{{ url_for('static', filename='img/og.jpg') }}">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#F9F4F0">
+<link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
+<link rel="preload" href="{{ url_for('static', filename='fonts/cormorant-garamond-latin-600-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=1">
+{% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip" href="#sadrzaj">{{ 'Preskoči na sadržaj' if lang == 'hr' else 'Skip to content' }}</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="{{ url_for('index_hr') if lang == 'hr' else url_for('index_en') }}">Academia <span>de la</span> Vida</a>
+    {% block nav %}{% endblock %}
+    <a class="lang" href="{{ alt_url if alt_url is defined else (url_for('index_en') if lang == 'hr' else url_for('index_hr')) }}" hreflang="{{ t.other_lang }}" lang="{{ t.other_lang }}">{{ t.other_lang|upper }}</a>
+    {% block headcta %}{% endblock %}
+  </div>
+</header>
+<main id="sadrzaj">
+{% block main %}{% endblock %}
+</main>
+<footer>
+  <div class="wrap">
+    <span class="fname">ACADEMIA DE LA VIDA</span>
+    <span class="meta">{{ t.footer_desc }} · {{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }} · OIB {{ cfg.ORG_OIB }}</span>
+    <span class="meta"><a href="{{ url_for('statute_pdf') }}">{{ 'Statut' if lang == 'hr' else 'Statute' }}</a> · <a href="{{ url_for('privacy_hr') if lang == 'hr' else url_for('privacy_en') }}">{{ t.doc_privacy }}</a> · {{ cfg.ORG_EMAIL }}</span>
+  </div>
+</footer>
+<script src="{{ url_for('static', filename='site.js') }}?v=1" defer></script>
+</body>
+</html>

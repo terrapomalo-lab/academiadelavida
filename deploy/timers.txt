@@ -1,0 +1,13 @@
+# Automatski poslovi – dodati u crontab korisnika adv:  sudo crontab -u adv -e
+# (svaki redak učitava tajne iz /etc/academiadelavida.env)
+SHELL=/bin/bash
+APP=/opt/academiadelavida
+
+# Svakih 5 minuta: pošalji poruke iz reda i ponovno pokušaj neuspjele
+*/5 * * * * cd $APP && set -a && . /etc/academiadelavida.env && set +a && venv/bin/flask --app app send-outbox >> /var/lib/academiadelavida/cron.log 2>&1
+
+# Svaki dan u 7:00: podsjetnici za obnovu članarine + sažetak novih prijava i uplata
+0 7 * * * cd $APP && set -a && . /etc/academiadelavida.env && set +a && venv/bin/flask --app app daily >> /var/lib/academiadelavida/cron.log 2>&1
+
+# Svaki dan u 3:00: provjerena sigurnosna kopija evidencije
+0 3 * * * cd $APP && set -a && . /etc/academiadelavida.env && set +a && venv/bin/flask --app app backup >> /var/lib/academiadelavida/cron.log 2>&1

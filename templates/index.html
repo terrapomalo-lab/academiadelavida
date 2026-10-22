@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block head %}
+<link rel="alternate" hreflang="hr" href="{{ cfg.BASE_URL }}/">
+<link rel="alternate" hreflang="en" href="{{ cfg.BASE_URL }}/en/">
+{% endblock %}
+{% block nav %}
+<nav class="links" aria-label="{{ 'Glavna navigacija' if lang == 'hr' else 'Main navigation' }}">
+  <a href="#o-academiji">{{ t.nav_about }}</a>
+  <a href="#podrucja">{{ t.nav_areas }}</a>
+  <a href="#clanstvo">{{ t.nav_membership }}</a>
+  <a href="#strucnjaci">{{ t.nav_people }}</a>
+  <a href="#kontakt">{{ t.nav_contact }}</a>
+</nav>
+{% endblock %}
+{% block headcta %}<a class="btn btn-gold btn-sm" href="#pristupnica">{{ t.cta_join }}</a>{% endblock %}
+{% block main %}
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-logo">
+      <img src="{{ url_for('static', filename='img/logo.webp') }}" width="900" height="900" alt="{{ t.logo_alt }}" fetchpriority="high">
+    </div>
+    <div class="hero-text">
+      <p class="eyebrow">{{ t.hero_eyebrow }}</p>
+      <h1>{{ t.hero_h1_a }} <em>{{ t.hero_h1_b }}</em></h1>
+      <p class="lead">{{ t.hero_lead }}</p>
+      <div class="actions">
+        <a class="btn btn-gold" href="#pristupnica">{{ t.cta_join }}</a>
+        <a class="btn btn-line" href="#podrska">{{ t.cta_support }}</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="o-academiji">
+  <div class="wrap">
+    <div class="sec-head"><div class="rule"></div><h2>{{ t.about_h }}</h2><p>{{ t.about_p }}</p></div>
+    <div class="grid3">
+      {% for h, p in t.about_items %}<div><h3>{{ h }}</h3><p>{{ p }}</p></div>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="band" id="poziv">
+  <div class="wrap letter">
+    <div class="frame"><img src="{{ url_for('static', filename='img/vida.webp') }}" width="640" height="800" alt="{{ t.letter_photo_alt }}" loading="lazy"></div>
+    <div class="quote">
+      <p class="eyebrow">{{ t.letter_h }}</p>
+      {% for p in t.letter_p %}<p>{{ p }}</p>{% endfor %}
+      <p class="sign"><strong>{{ t.letter_sign_name }}</strong><br>{{ t.letter_sign_role }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="clanstvo-donosi">
+  <div class="wrap">
+    <div class="sec-head"><div class="rule"></div><h2>{{ t.benefits_h }}</h2><p>{{ t.benefits_p }}</p></div>
+    <div class="benefits">
+      {% for h, p in t.benefits %}<div class="benefit"><h3>{{ h }}</h3><p>{{ p }}</p></div>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="band" id="podrucja">
+  <div class="wrap">
+    <div class="sec-head"><div class="rule"></div><h2>{{ t.areas_h }}</h2><p>{{ t.areas_p }}</p></div>
+    <div class="areas">
+      {% for h, p in t.areas %}<article class="area"><div class="mark"></div><h3>{{ h }}</h3><p>{{ p }}</p></article>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="band cream" id="clanstvo">
+  <div class="wrap member">
+    <div class="member-info">
+      <div class="sec-head"><div class="rule"></div><h2>{{ t.member_h }}</h2><p>{{ t.member_p }}</p></div>
+      <div class="fees">
+        <div class="fee"><span class="amt">{{ '50 €' if lang == 'hr' else '€50' }} <small>{{ t.per_year }}</small></span><span>{{ t.fee_std_label }}</span></div>
+        <div class="fee"><span class="amt">{{ '20 €' if lang == 'hr' else '€20' }} <small>{{ t.per_year }}</small></span><span>{{ t.fee_stu_label }}</span></div>
+      </div>
+      <div class="types">
+        <div><h3>{{ t.type_regular_h }}</h3><p>{{ t.type_regular_p }}</p></div>
+        <div><h3>{{ t.type_assoc_h }}</h3><p>{{ t.type_assoc_p }}</p></div>
+        <p class="note">{{ t.type_honor }}</p>
+      </div>
+      <div>
+        <h3>{{ t.steps_h }}</h3>
+        <ol class="steps">{% for s in t.steps %}<li><span>{{ s }}</span></li>{% endfor %}</ol>
+      </div>
+      <div class="minors"><strong>{{ t.minors_h }}</strong><span class="note">{{ t.minors_p }} {{ cfg.ORG_EMAIL }}</span></div>
+    </div>
+
+    <div id="pristupnica">
+      <form class="apply" id="apply" method="post" action="{{ url_for('apply_nojs') }}" novalidate
+            data-api="{{ url_for('api_apply') }}" data-lang="{{ lang }}"
+            data-msg='{{ {"err_prefix": t.err_prefix, "err_name": t.err_name, "err_email": t.err_email, "err_oib": t.err_oib, "err_country": t.err_country, "err_dob": t.err_dob, "err_minor": t.err_minor, "err_type": t.err_type, "err_fee": t.err_fee, "err_statute": t.err_statute, "err_adult": t.err_adult, "err_privacy": t.err_privacy, "sending": t.f_sending, "submit": t.f_submit, "server": t.err_server|replace("{email}", cfg.ORG_EMAIL)}|tojson|forceescape }}'>
+        <h3>{{ t.form_h }}</h3>
+        <p class="hint">{{ t.form_intro }}</p>
+        <input type="hidden" name="lang" value="{{ lang }}">
+        <div class="hp" aria-hidden="true"><label for="web">Web</label><input type="text" id="web" name="web" tabindex="-1" autocomplete="off"></div>
+
+        <div class="field"><label for="ime">{{ t.f_name }}</label><input type="text" id="ime" name="ime" autocomplete="name" required maxlength="120"></div>
+        <div class="row2">
+          <div class="field"><label for="email">{{ t.f_email }}</label><input type="email" id="email" name="email" autocomplete="email" required maxlength="200"></div>
+          <div class="field"><label for="tel">{{ t.f_phone }} <span class="opt">({{ t.optional }})</span></label><input type="tel" id="tel" name="tel" autocomplete="tel" maxlength="40"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="oib">{{ t.f_oib }}</label><input type="text" id="oib" name="oib" inputmode="numeric" maxlength="11" autocomplete="off"></div>
+          <div class="field"><label for="dob">{{ t.f_dob }}</label><input type="date" id="dob" name="dob" required min="1900-01-01"></div>
+        </div>
+        <label class="choice"><input type="checkbox" id="bez_oib" name="bez_oib" value="1"> {{ t.f_no_oib }}</label>
+        <div class="field" id="country-wrap" hidden>
+          <label for="drzava">{{ t.f_country }}</label><input type="text" id="drzava" name="drzava" autocomplete="country-name" maxlength="80">
+          <span class="hint">{{ t.f_no_oib_note }}</span>
+        </div>
+
+        <fieldset>
+          <legend class="legend">{{ t.f_type }}</legend>
+          <label class="choice"><input type="radio" name="vrsta" id="v-red" value="regular" required> {{ t.f_type_regular }}</label>
+          <label class="choice"><input type="radio" name="vrsta" id="v-prid" value="associate"> {{ t.f_type_assoc }}</label>
+        </fieldset>
+        <fieldset>
+          <legend class="legend">{{ t.f_fee }}</legend>
+          <label class="choice"><input type="radio" name="clanarina" id="c-std" value="standard" required> {{ t.f_fee_std }}</label>
+          <label class="choice"><input type="radio" name="clanarina" id="c-stu" value="student"> {{ t.f_fee_stu }}</label>
+        </fieldset>
+
+        <div class="row2">
+          <div class="field"><label for="podrucje">{{ t.f_interests }} <span class="opt">({{ t.optional }})</span></label><input type="text" id="podrucje" name="podrucje" maxlength="300"></div>
+          <div class="field"><label for="jezik">{{ t.f_lang }}</label>
+            <select id="jezik" name="jezik"><option value="hr" {{ 'selected' if lang == 'hr' }}>Hrvatski</option><option value="en" {{ 'selected' if lang == 'en' }}>English</option></select></div>
+        </div>
+
+        <div class="sep"></div>
+        <label class="choice"><input type="checkbox" id="statut" name="statut" value="1" required> <span>{{ t.f_statute|fill(statut='<a href="' ~ url_for('statute_pdf') ~ '" target="_blank" rel="noopener">' ~ (t.f_statute_link|e) ~ '</a>') }}</span></label>
+        <label class="choice"><input type="checkbox" id="punoljetnost" name="punoljetnost" value="1" required> <span>{{ t.f_adult }}</span></label>
+        <label class="choice"><input type="checkbox" id="privatnost" name="privatnost" value="1" required> <span>{{ t.f_privacy|fill(obavijest='<a href="' ~ privacy_url ~ '" target="_blank" rel="noopener">' ~ (t.f_privacy_link|e) ~ '</a>') }}</span></label>
+        <div class="sep"></div>
+        <label class="choice"><input type="checkbox" id="novosti" name="novosti" value="1"> <span>{{ t.f_news }} <span class="opt">{{ t.f_news_note }}</span></span></label>
+
+        <p class="err" id="apply-err" role="alert" hidden></p>
+        <button class="btn btn-gold" type="submit" id="apply-btn">{{ t.f_submit }}</button>
+      </form>
+      <div class="success" id="apply-ok" hidden tabindex="-1" role="status"></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="strucnjaci">
+  <div class="wrap">
+    <div class="sec-head"><div class="rule"></div><h2>{{ t.people_h }}</h2><p>{{ t.people_p }}</p></div>
+    <div class="people">
+      {% for key, name, role, bio in t.people %}
+      <article class="person">
+        <div class="frame"><img src="{{ url_for('static', filename='img/' ~ key ~ '.webp') }}" width="640" height="800" alt="{{ name }}" loading="lazy"></div>
+        <span class="role">{{ role }}</span>
+        <h3>{{ name }}</h3>
+        <p>{{ bio }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="band alt" id="podrska">
+  <div class="wrap support">
+    <div class="sec-head"><div class="rule"></div><h2>{{ t.support_h }}</h2><p>{{ t.support_p }}</p><p>{{ t.support_sep }}</p></div>
+    <div class="don" id="don" data-lang="{{ lang }}" data-hub3="{{ url_for('don_hub3') }}" data-epc="{{ url_for('don_epc') }}" data-pdf="{{ url_for('don_pdf') }}"
+         data-err="{{ t.don_err }}" data-copied="{{ t.copied }}">
+      <div class="chips" role="group" aria-label="{{ t.don_amount }}">
+        {% for v in [10, 20, 50, 100] %}<button type="button" class="chip" data-amount="{{ v }}" aria-pressed="false">{{ v }} €</button>{% endfor %}
+      </div>
+      <div class="don-row">
+        <div class="field"><label for="don-amount">{{ t.don_other }}</label><input type="number" id="don-amount" min="1" max="10000" step="1" inputmode="decimal"></div>
+        <button type="button" class="btn btn-gold" id="don-show">{{ t.don_show }}</button>
+      </div>
+      <p class="err" id="don-err" role="alert" hidden></p>
+      <div class="paybox" id="don-box" hidden>
+        <dl class="pay">
+          <div><dt>{{ t.pay_amount }}</dt><dd id="d-amount"></dd><button class="copy" type="button" data-copy="d-amount-raw">{{ t.copy_btn }}</button></div>
+          <div><dt>{{ t.pay_recipient }}</dt><dd id="d-rec">{{ cfg.ORG_NAME }}, {{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }}</dd><button class="copy" type="button" data-copy="d-rec">{{ t.copy_btn }}</button></div>
+          <div><dt>{{ t.pay_iban }}</dt><dd id="d-iban">{{ cfg.ORG_IBAN }}</dd><button class="copy" type="button" data-copy="d-iban">{{ t.copy_btn }}</button></div>
+          <div><dt>{{ t.pay_model_ref }}</dt><dd id="d-model">HR99</dd><button class="copy" type="button" data-copy="d-model">{{ t.copy_btn }}</button></div>
+          <div><dt>{{ t.pay_desc }}</dt><dd id="d-desc">Donacija</dd><button class="copy" type="button" data-copy="d-desc">{{ t.copy_btn }}</button></div>
+        </dl>
+        <span id="d-amount-raw" hidden></span>
+        <div class="codes">
+          <div class="code"><h4>{{ t.code_hr }}</h4><img id="d-hub3" alt="HUB3" width="690" height="204"><div class="dl"><a class="btn btn-line btn-sm" id="d-hub3-dl" href="#">{{ t.dl_png }}</a><a class="btn btn-line btn-sm" id="d-pdf" href="#">{{ t.dl_pdf }}</a></div></div>
+          <div class="code qr"><h4>{{ t.code_eu }}</h4><img id="d-epc" alt="EPC QR" width="300" height="300"><p>{{ t.code_eu_note }}</p></div>
+        </div>
+        <div class="howto"><strong>{{ t.howto_h }}</strong><ul>{% for h in t.howto %}<li>{{ h }}</li>{% endfor %}</ul><p class="note">{{ t.pay_check }}</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="kontakt">
+  <div class="wrap contact">
+    <div>
+      <div class="sec-head"><div class="rule"></div><h2>{{ t.contact_h }}</h2></div>
+      <dl>
+        <div><dt>{{ t.c_name }}</dt><dd>{{ cfg.ORG_NAME_FULL if lang == 'hr' else cfg.ORG_NAME_FULL_EN }}</dd></div>
+        <div><dt>{{ t.c_address }}</dt><dd>{{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }}, {{ cfg.ORG_COUNTRY if lang == 'hr' else cfg.ORG_COUNTRY_EN }}</dd></div>
+        <div><dt>{{ t.c_email }}</dt><dd><a href="mailto:{{ cfg.ORG_EMAIL }}">{{ cfg.ORG_EMAIL }}</a></dd></div>
+        <div><dt>{{ t.c_oib }}</dt><dd>{{ cfg.ORG_OIB }}</dd></div>
+        <div><dt>{{ t.c_reg }}</dt><dd>{{ cfg.ORG_REG_NO }}</dd></div>
+        <div><dt>IBAN</dt><dd>{{ cfg.ORG_IBAN }}</dd></div>
+      </dl>
+    </div>
+    <div>
+      <div class="sec-head"><div class="rule"></div><h2>{{ t.docs_h }}</h2></div>
+      <ul class="docs">
+        <li><a href="{{ url_for('statute_pdf') }}" target="_blank" rel="noopener">{{ t.doc_statute }}</a></li>
+        <li><a href="{{ privacy_url }}">{{ t.doc_privacy }}</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}

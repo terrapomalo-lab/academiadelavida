@@ -1,0 +1,13 @@
+{% extends "admin/base.html" %}
+{% block title %}Odluke{% endblock %}
+{% block main %}
+<h1>Evidentirane odluke Upravnog odbora</h1>
+{% if not rows %}<p class="muted">Još nema evidentiranih odluka.</p>{% else %}
+<div class="tbl"><table>
+  <thead><tr><th>Datum</th><th>Vrsta</th><th>Oznaka</th><th>Broj osoba</th><th>Evidentirao/la</th></tr></thead>
+  <tbody>{% for d in rows %}
+    <tr><td><a href="{{ url_for('admin_decision_view', dec_id=d.id) }}">{{ d.decision_date }}</a></td>
+        <td>{{ 'prijem' if d.kind == 'admit' else 'odbijanje' }}</td><td>{{ d.reference }}</td><td class="num">{{ d.n }}</td><td>{{ d.created_by }} · {{ d.created_at[:16]|replace('T', ' ') }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>{% endif %}
+{% endblock %}

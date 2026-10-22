@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% block title %}Članovi{% endblock %}
+{% block main %}
+<h1>Članovi</h1>
+<div class="filters">
+  {% for key, label in [('all','Svi'),('unpaid','Čeka uplatu'),('overdue','Nakon roka'),('expiring','Završava u 30 dana'),('completion','Treba dopunu'),('ended','Prestalo članstvo')] %}
+  <a href="{{ url_for('admin_members', f=key) }}" class="{{ 'cur' if f == key }}">{{ label }}</a>
+  {% endfor %}
+  <a href="{{ url_for('admin_member_new') }}">+ Ručni unos</a>
+</div>
+{% if not rows %}<p class="muted">Nema članova za odabrani prikaz.</p>{% else %}
+<div class="tbl"><table>
+  <thead><tr><th>Broj</th><th>Ime i prezime</th><th>Vrsta</th><th>Prijem</th><th>Članstvo</th><th>Razdoblje</th><th>Članarina</th><th>Rok</th></tr></thead>
+  <tbody>{% for r in rows %}
+  <tr>
+    <td><a href="{{ url_for('admin_member', app_id=r.id) }}">{{ r.public_no }}</a></td>
+    <td>{{ r.full_name }}{% if r.needs_completion %} <span class="pill p-info">dopuna</span>{% endif %}</td>
+    <td>{{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}{{ ', student' if r.fee_cat == 'student' }}</td>
+    <td>{{ r.admitted_date }}</td>
+    <td>{% if r.mstatus == 'active' %}<span class="pill p-paid">aktivno</span>{% else %}<span class="pill p-mute">prestalo {{ r.ended_date }}</span>{% endif %}</td>
+    <td>{{ r.period_start }} – {{ r.period_end }}</td>
+    <td>{% if r.dstatus == 'paid' %}<span class="pill p-paid">plaćeno</span>{% elif r.dstatus == 'open' and r.due_date < today %}<span class="pill p-over">nakon roka</span>{% elif r.dstatus == 'open' %}<span class="pill p-open">čeka uplatu</span>{% else %}<span class="pill p-mute">{{ r.dstatus or '–' }}</span>{% endif %}</td>
+    <td>{{ r.due_date if r.dstatus == 'open' else '' }}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+<p class="muted">Ukupno: {{ rows|length }}</p>{% endif %}
+{% endblock %}

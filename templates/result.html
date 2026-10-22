@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block main %}
+<div class="wrap"><div class="doc">
+  {% if body.ok %}
+    <h1>{{ body.title }}</h1>
+    {% for p in body.paragraphs %}<p>{{ p }}</p>{% endfor %}
+  {% else %}
+    <h1>{{ t.form_h }}</h1>
+    <p class="err">{{ body.message }}</p>
+  {% endif %}
+  <p><a href="{{ home }}{{ '' if body.ok else '#pristupnica' }}">{{ t.back_home }}</a></p>
+</div></div>
+{% endblock %}

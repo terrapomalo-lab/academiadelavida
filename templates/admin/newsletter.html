@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block title %}Newsletter{% endblock %}
+{% block main %}
+<h1>Newsletter</h1>
+<p class="muted">Aktivni pretplatnici: hrvatski {{ counts.hr }}, engleski {{ counts.en }}. Svaka poruka automatski dobiva poveznicu za odjavu. Newsletter se šalje samo onima koji su se za njega zasebno prijavili.</p>
+
+<form class="box" method="post">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="save">
+  <h2>Novi nacrt</h2>
+  <div class="row">
+    <div><label for="s">Naslov</label><input type="text" id="s" name="subject" required></div>
+    <div><label for="l">Jezik (primatelji)</label><select id="l" name="lang"><option value="hr">hrvatski</option><option value="en">engleski</option></select></div>
+  </div>
+  <div><label for="b">Tekst</label><textarea id="b" name="body" required></textarea></div>
+  <div><button class="btn" type="submit">Spremi nacrt</button></div>
+</form>
+
+{% for n in items %}
+<div class="box">
+  <h2>{{ n.subject }} <span class="muted">· {{ 'hrvatski' if n.lang == 'hr' else 'engleski' }} · {{ 'poslano ' ~ n.sent_at[:10] ~ ' (' ~ n.recipients ~ ' primatelja, odobrio/la: ' ~ n.approved_by ~ ')' if n.status == 'sent' else 'nacrt' }}</span></h2>
+  <pre>{{ n.body }}</pre>
+  {% if n.status == 'draft' %}
+  <form method="post" class="row">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ n.id }}">
+    <div><label for="ap{{ n.id }}">Sadržaj odobrio/la</label><input type="text" id="ap{{ n.id }}" name="approved_by"></div>
+    <label class="chk"><input type="checkbox" name="approved" value="1"> Sadržaj je odobren za slanje ({{ counts[n.lang] }} primatelja)</label>
+    <div><button class="btn gold" name="action" value="send">Pošalji</button> <button class="btn danger sm" name="action" value="delete">Obriši nacrt</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

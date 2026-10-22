@@ -1,0 +1,18 @@
+[Unit]
+Description=Academia de la Vida (web stranica i članstvo)
+After=network.target
+
+[Service]
+User=adv
+Group=adv
+WorkingDirectory=/opt/academiadelavida
+EnvironmentFile=/etc/academiadelavida.env
+ExecStart=/opt/academiadelavida/venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8077 --access-logfile - 'app:create_app()'
+Restart=always
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/academiadelavida /var/backups/academiadelavida
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

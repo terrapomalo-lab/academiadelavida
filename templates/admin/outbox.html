@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block title %}Poruke{% endblock %}
+{% block main %}
+<h1>Poruke</h1>
+<form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="retry"><button class="btn" type="submit">Ponovno pošalji neuspjele poruke</button></form>
+<p class="muted">Sve automatske poruke prolaze kroz ovaj red. Ako slanje ne uspije, poruka se čuva i automatski ponovno šalje svakih nekoliko minuta. „Zadržano” znači da poruka nije poslana namjerno (npr. kod ručnog unosa postojećih članova).</p>
+<div class="tbl"><table>
+  <thead><tr><th>#</th><th>Vrsta</th><th>Primatelj</th><th>Naslov</th><th>Status</th><th>Pokušaji</th><th>Vrijeme</th><th>Greška</th></tr></thead>
+  <tbody>{% for o in rows %}
+  <tr><td>{{ o.id }}</td><td>{{ o.kind }}</td><td>{{ o.to_addr }}</td><td>{{ o.subject }}</td>
+      <td>{% if o.status == 'sent' %}<span class="pill p-paid">poslano</span>{% elif o.status == 'failed' %}<span class="pill p-over">neuspjelo</span>{% elif o.status == 'held' %}<span class="pill p-mute">zadržano</span>
+          <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="release"><input type="hidden" name="id" value="{{ o.id }}"><button class="btn sec sm">Pošalji</button></form>
+          {% else %}<span class="pill p-open">u redu</span>{% endif %}</td>
+      <td class="num">{{ o.attempts }}</td><td>{{ (o.sent_at or o.created_at)[:16]|replace('T',' ') }}</td><td class="muted">{{ o.last_error or '' }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endblock %}

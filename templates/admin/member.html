@@ -1,0 +1,84 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ a.full_name }}{% endblock %}
+{% block main %}
+<h1>{{ a.full_name }} <span class="muted">· {{ a.public_no }}</span></h1>
+<p>
+  Prijava: {% if a.app_status == 'submitted' %}<span class="pill p-open">čeka odluku</span>{% elif a.app_status == 'approved' %}<span class="pill p-paid">primljen/a</span>{% elif a.app_status == 'rejected' %}<span class="pill p-over">odbijena</span>{% else %}<span class="pill p-mute">{{ a.app_status }}</span>{% endif %}
+  {% if m %} · Članstvo: {% if m.status == 'active' %}<span class="pill p-paid">aktivno od {{ m.admitted_date }}</span>{% else %}<span class="pill p-mute">prestalo {{ m.ended_date }} ({{ m.ended_reason }})</span>{% endif %}{% endif %}
+  {% if a.needs_completion %} · <span class="pill p-info">treba dopunu podataka</span>{% endif %}
+  {% if dec %} · Odluka: <a href="{{ url_for('admin_decision_view', dec_id=dec.id) }}">{{ dec.decision_date }}, {{ dec.reference }}</a>{% endif %}
+</p>
+
+<div class="grid2">
+<form class="box" method="post">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="update">
+  <h2>Podaci</h2>
+  <div class="row"><div><label for="fn">Ime i prezime</label><input type="text" id="fn" name="full_name" value="{{ a.full_name }}" required></div></div>
+  <div class="row">
+    <div><label for="em">E-mail</label><input type="email" id="em" name="email" value="{{ a.email }}" required></div>
+    <div><label for="ph">Telefon</label><input type="text" id="ph" name="phone" value="{{ a.phone or '' }}"></div>
+  </div>
+  <div class="row">
+    <div><label for="oib">OIB</label><input type="text" id="oib" name="oib" value="{{ a.oib or '' }}" inputmode="numeric" maxlength="11"></div>
+    <div><label for="ct">Država (ako nema hrv. OIB)</label><input type="text" id="ct" name="country" value="{{ a.country or '' }}"></div>
+    <div><label for="dob">Datum rođenja</label><input type="date" id="dob" name="dob" value="{{ a.dob }}" required></div>
+  </div>
+  <div class="row">
+    <div><label for="lg">Jezik poruka</label><select id="lg" name="lang"><option value="hr" {{ 'selected' if a.lang == 'hr' }}>hrvatski</option><option value="en" {{ 'selected' if a.lang == 'en' }}>engleski</option></select></div>
+    <div><label for="nt">Interna napomena</label><input type="text" id="nt" name="admin_note" value="{{ a.admin_note or '' }}"></div>
+  </div>
+  <label class="chk"><input type="checkbox" name="needs_completion" value="1" {{ 'checked' if a.needs_completion }}> Treba dopunu podataka prije konačnog upisa</label>
+  <p class="muted">Vrsta: {{ 'redovito' if a.member_type == 'regular' else 'pridruženo' }} · članarina: {{ 'studentska' if a.fee_cat == 'student' else 'standardna' }} · zanimanje/interes: {{ a.interests or '–' }} · prijava: {{ a.created_at[:16]|replace('T',' ') }} ({{ a.source }})</p>
+  <div><button class="btn" type="submit">Spremi podatke</button></div>
+</form>
+
+<div>
+  <h2>Članarine</h2>
+  {% if not dues %}<p class="muted">Članarina se otvara nakon odluke o prijemu.</p>{% endif %}
+  {% for d in dues %}
+  <div class="box">
+    <dl class="kv">
+      <dt>Razdoblje</dt><dd>{{ d.period_start }} – {{ d.period_end }}</dd>
+      <dt>Iznos</dt><dd>{{ fmt_eur(d.amount_cents) }}</dd>
+      <dt>Poziv na broj</dt><dd>HR00 {{ d.reference }}</dd>
+      <dt>Rok</dt><dd>{{ d.due_date }}</dd>
+      <dt>Status</dt><dd>{% if d.status == 'paid' %}<span class="pill p-paid">plaćeno {{ d.paid_at }}</span>{% elif d.status == 'open' and d.due_date < today %}<span class="pill p-over">nakon roka</span>{% elif d.status == 'open' %}<span class="pill p-open">čeka uplatu</span>{% else %}<span class="pill p-mute">poništeno</span>{% endif %}</dd>
+    </dl>
+    {% if d.status == 'open' %}
+    <form method="post" class="row">
+      <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="paid"><input type="hidden" name="due_id" value="{{ d.id }}">
+      <div><label for="am{{ d.id }}">Primljeni iznos (€)</label><input type="text" id="am{{ d.id }}" name="amount" value="{{ '%d,%02d'|format(d.amount_cents // 100, d.amount_cents % 100) }}" required></div>
+      <div><label for="bd{{ d.id }}">Datum uplate (prema banci)</label><input type="date" id="bd{{ d.id }}" name="booked_date" max="{{ today }}" required></div>
+      <div><label for="no{{ d.id }}">Napomena</label><input type="text" id="no{{ d.id }}" name="note" placeholder="npr. izvod br."></div>
+      <div><button class="btn gold" type="submit">Evidentiraj uplatu</button></div>
+    </form>
+    <p class="muted">Evidentirajte tek nakon što ste uplatu vidjeli na računu udruge. Član tada automatski dobiva potvrdu.</p>
+    <div class="row">
+      <a class="btn sec sm" href="{{ url_for('pay_page', token=a.token) }}" target="_blank" rel="noopener">Stranica za uplatu</a>
+      <a class="btn sec sm" href="{{ url_for('pay_pdf', token=a.token) }}">PDF obavijest</a>
+      <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="resend_notice"><input type="hidden" name="due_id" value="{{ d.id }}"><button class="btn sec sm" type="submit">Ponovno pošalji obavijest</button></form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if m and m.status == 'active' %}
+  <form class="box" method="post">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="end">
+    <h2>Prestanak članstva</h2>
+    <div class="row">
+      <div><label for="ed">Datum</label><input type="date" id="ed" name="ended_date" value="{{ today }}"></div>
+      <div><label for="er">Razlog (čl. 15. Statuta)</label><select id="er" name="ended_reason"><option>dragovoljni istup</option><option>neplaćanje članarine u roku</option><option>isključenje</option><option>smrt člana / prestanak pravne osobe</option></select></div>
+      <div><button class="btn danger" type="submit">Evidentiraj prestanak</button></div>
+    </div>
+  </form>
+  {% endif %}
+</div>
+</div>
+
+<h2>Poruke</h2>
+{% if not mails %}<p class="muted">Nema poruka.</p>{% else %}
+<div class="tbl"><table><thead><tr><th>Vrsta</th><th>Naslov</th><th>Status</th><th>Vrijeme</th><th>Greška</th></tr></thead><tbody>
+{% for o in mails %}<tr><td>{{ o.kind }}</td><td>{{ o.subject }}</td><td>{% if o.status == 'sent' %}<span class="pill p-paid">poslano</span>{% elif o.status == 'failed' %}<span class="pill p-over">neuspjelo</span>{% elif o.status == 'held' %}<span class="pill p-mute">zadržano</span>{% else %}<span class="pill p-open">u redu</span>{% endif %}</td><td>{{ (o.sent_at or o.created_at)[:16]|replace('T',' ') }}</td><td class="muted">{{ o.last_error or '' }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+{% endblock %}

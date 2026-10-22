@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block main %}
+<div class="wrap"><div class="doc">
+  <h1>{{ t.unsub_title }}</h1>
+  {% if state == 'bad' %}<p>{{ t.unsub_bad }}</p>
+  {% elif state == 'done' %}<p>{{ t.unsub_done }}</p>
+  {% else %}
+    <p>{{ t.unsub_confirm }}</p>
+    <form method="post"><button class="btn btn-gold" type="submit">{{ t.unsub_btn }}</button></form>
+  {% endif %}
+  <p><a href="{{ home }}">{{ t.back_home }}</a></p>
+</div></div>
+{% endblock %}

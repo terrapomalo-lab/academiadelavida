@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block title %}Izvoz{% endblock %}
+{% block main %}
+<h1>Izvoz evidencije</h1>
+<div class="tbl"><table>
+  <thead><tr><th>Evidencija</th><th>Excel</th><th>CSV</th></tr></thead>
+  <tbody>
+    <tr><td>Popis članova (podaci prema čl. 18. Statuta)</td><td><a href="{{ url_for('admin_export', what='popis-clanova', fmt='xlsx') }}">.xlsx</a></td><td><a href="{{ url_for('admin_export', what='popis-clanova', fmt='csv') }}">.csv</a></td></tr>
+    <tr><td>Članarine po razdobljima</td><td><a href="{{ url_for('admin_export', what='clanarine', fmt='xlsx') }}">.xlsx</a></td><td><a href="{{ url_for('admin_export', what='clanarine', fmt='csv') }}">.csv</a></td></tr>
+    <tr><td>Uplate</td><td><a href="{{ url_for('admin_export', what='uplate', fmt='xlsx') }}">.xlsx</a></td><td><a href="{{ url_for('admin_export', what='uplate', fmt='csv') }}">.csv</a></td></tr>
+    <tr><td>Sve prijave</td><td><a href="{{ url_for('admin_export', what='prijave', fmt='xlsx') }}">.xlsx</a></td><td><a href="{{ url_for('admin_export', what='prijave', fmt='csv') }}">.csv</a></td></tr>
+  </tbody>
+</table></div>
+<h2>Sigurnosne kopije</h2>
+<p class="muted">Kopija cijele evidencije izrađuje se automatski svake noći na serveru i provjerava se njezina ispravnost. Čuva se zadnjih {{ cfg.BACKUP_KEEP }} kopija.</p>
+{% if backups %}<ul>{% for b in backups %}<li>{{ b.name }} ({{ (b.stat().st_size / 1024)|round(1) }} KB)</li>{% endfor %}</ul>{% else %}<p class="muted">Još nema kopija.</p>{% endif %}
+{% endblock %}

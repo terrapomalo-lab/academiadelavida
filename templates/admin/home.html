@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+{% block title %}Pregled{% endblock %}
+{% block main %}
+<h1>Pregled</h1>
+<div class="tiles">
+  <a class="tile {{ 'warn' if s.submitted }}" href="{{ url_for('admin_applications') }}"><b>{{ s.submitted }}</b><span>prijava čeka odluku Upravnog odbora</span></a>
+  <a class="tile" href="{{ url_for('admin_members') }}"><b>{{ s.members }}</b><span>aktivnih članova</span></a>
+  <a class="tile" href="{{ url_for('admin_members', f='unpaid') }}"><b>{{ s.open_dues }}</b><span>članarina čeka uplatu</span></a>
+  <a class="tile {{ 'warn' if s.overdue }}" href="{{ url_for('admin_members', f='overdue') }}"><b>{{ s.overdue }}</b><span>članarina nakon roka</span></a>
+  <a class="tile" href="{{ url_for('admin_members', f='expiring') }}"><b>{{ s.expiring }}</b><span>plaćenih razdoblja završava u 30 dana</span></a>
+  <a class="tile {{ 'warn' if s.review }}" href="{{ url_for('admin_payments') }}"><b>{{ s.review }}</b><span>uplata za pregled</span></a>
+  <a class="tile {{ 'warn' if s.needs_completion }}" href="{{ url_for('admin_members', f='completion') }}"><b>{{ s.needs_completion }}</b><span>osoba treba dopunu podataka (npr. bez OIB-a)</span></a>
+  <a class="tile {{ 'warn' if s.failed }}" href="{{ url_for('admin_outbox') }}"><b>{{ s.failed }}</b><span>neposlanih poruka</span></a>
+  <a class="tile" href="{{ url_for('admin_newsletter') }}"><b>{{ s.subscribers }}</b><span>pretplatnika na newsletter</span></a>
+</div>
+<p class="muted">Prijave bez OIB-a vidljive su i na popisu prijava; nakon prijema nalaze se pod filtrom „Treba dopunu”.</p>
+{% endblock %}

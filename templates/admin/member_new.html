@@ -1,0 +1,33 @@
+{% extends "admin/base.html" %}
+{% block title %}Ručni unos člana{% endblock %}
+{% block main %}
+<h1>Ručni unos postojećeg člana</h1>
+<p class="muted">Za članove primljene prije pokretanja stranice. Razdoblje i članarina postavljaju se prema odluci o članarini.</p>
+<form class="box" method="post">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <div class="row">
+    <div><label for="ime">Ime i prezime</label><input type="text" id="ime" name="ime" value="{{ f.ime }}" required></div>
+    <div><label for="email">E-mail</label><input type="email" id="email" name="email" value="{{ f.email }}" required></div>
+    <div><label for="tel">Telefon</label><input type="text" id="tel" name="tel" value="{{ f.tel }}"></div>
+  </div>
+  <div class="row">
+    <div><label for="oib">OIB</label><input type="text" id="oib" name="oib" value="{{ f.oib }}" maxlength="11"></div>
+    <div><label for="drzava">Država (ako nema hrv. OIB)</label><input type="text" id="drzava" name="drzava" value="{{ f.drzava }}"></div>
+    <div><label for="dob">Datum rođenja</label><input type="date" id="dob" name="dob" value="{{ f.dob }}" required></div>
+  </div>
+  <label class="chk"><input type="checkbox" name="bez_oib" value="1" {{ 'checked' if f.bez_oib }}> Nema hrvatski OIB</label>
+  <div class="row">
+    <div><label for="vrsta">Vrsta članstva</label><select id="vrsta" name="vrsta"><option value="regular">redovito</option><option value="associate" {{ 'selected' if f.vrsta == 'associate' }}>pridruženo</option></select></div>
+    <div><label for="clanarina">Članarina</label><select id="clanarina" name="clanarina"><option value="standard">standardna (50 €)</option><option value="student" {{ 'selected' if f.clanarina == 'student' }}>studentska (20 €)</option></select></div>
+    <div><label for="jezik">Jezik poruka</label><select id="jezik" name="jezik"><option value="hr">hrvatski</option><option value="en" {{ 'selected' if f.jezik == 'en' }}>engleski</option></select></div>
+  </div>
+  <div class="row">
+    <div><label for="ad">Datum prijema</label><input type="date" id="ad" name="admitted_date" value="{{ f.admitted_date }}" required></div>
+    <div><label for="ps">Početak plaćenog / tekućeg razdoblja</label><input type="date" id="ps" name="period_start" value="{{ f.period_start }}"></div>
+  </div>
+  <label class="chk"><input type="checkbox" name="already_paid" value="1"> Članarina za to razdoblje već je plaćena</label>
+  <div class="row"><div><label for="pd">Datum uplate (ako je plaćeno)</label><input type="date" id="pd" name="paid_date"></div></div>
+  <label class="chk"><input type="checkbox" name="send_notice" value="1"> Ako nije plaćeno: pošalji obavijest za uplatu</label>
+  <div><button class="btn" type="submit">Upiši člana</button></div>
+</form>
+{% endblock %}

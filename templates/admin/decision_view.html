@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% block title %}Odluka {{ d.decision_date }}{% endblock %}
+{% block main %}
+<h1>Odluka od {{ d.decision_date }} – {{ 'prijem u članstvo' if d.kind == 'admit' else 'odbijanje prijava' }}</h1>
+<dl class="kv box">
+  <dt>Oznaka</dt><dd>{{ d.reference }}</dd>
+  {% if d.note %}<dt>Napomena</dt><dd>{{ d.note }}</dd>{% endif %}
+  <dt>Evidentirano</dt><dd>{{ d.created_at[:16]|replace('T', ' ') }} ({{ d.created_by }})</dd>
+</dl>
+<h2>Popis osoba ({{ people|length }})</h2>
+<div class="tbl"><table>
+  <thead><tr><th>Broj</th><th>Ime i prezime</th><th>Vrsta članstva</th><th>OIB</th><th>Datum rođenja</th></tr></thead>
+  <tbody>{% for r in people %}
+    <tr><td><a href="{{ url_for('admin_member', app_id=r.id) }}">{{ r.public_no }}</a></td><td>{{ r.full_name }}</td>
+        <td>{{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}</td><td>{{ r.oib or ('nema hrv. OIB – ' ~ (r.country or '')) }}</td><td>{{ r.dob }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>
+{% endblock %}

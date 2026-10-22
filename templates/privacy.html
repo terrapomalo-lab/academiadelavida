@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ t.privacy_title }} · Academia de la Vida{% endblock %}
+{% block headcta %}<a class="btn btn-gold btn-sm" href="{{ home }}#pristupnica">{{ t.cta_join }}</a>{% endblock %}
+{% block main %}
+<div class="wrap"><article class="doc">
+{% if lang == 'hr' %}
+<h1>Obavijest o privatnosti</h1>
+<p>Ova obavijest objašnjava kako udruga Academia de la Vida obrađuje osobne podatke prikupljene putem ove stranice, pristupnice i newslettera, u skladu s Općom uredbom o zaštiti podataka (EU) 2016/679.</p>
+
+<h2>Voditelj obrade</h2>
+<p>{{ cfg.ORG_NAME_FULL }}, {{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }}, OIB {{ cfg.ORG_OIB }}. Kontakt za pitanja o osobnim podacima: {{ cfg.ORG_EMAIL }}.</p>
+
+<h2>Koje podatke obrađujemo</h2>
+<ul>
+  <li>Podatke iz pristupnice: ime i prezime, e-mail, telefon (neobavezno), OIB ili oznaku da osoba nema hrvatski OIB te državu prebivališta, datum rođenja, vrstu članstva i kategoriju članarine, zanimanje ili područje interesa (neobavezno) i odabrani jezik.</li>
+  <li>Podatke o članstvu: datum prijema, razdoblje članarine, datum i razlog prestanka članstva.</li>
+  <li>Podatke o uplatama: iznos, datum, ime platitelja, poziv na broj i opis plaćanja.</li>
+  <li>Za newsletter: e-mail, ime i jezik.</li>
+  <li>Tehničke podatke: IP adresu s koje je pristupnica poslana, radi zaštite obrasca od zlouporabe.</li>
+</ul>
+
+<h2>Svrhe i pravne osnove</h2>
+<ul>
+  <li>Prijem u članstvo, vođenje članstva i popisa članova te poruke vezane uz članstvo: pristupanje udruzi i članski odnos (čl. 6. st. 1. t. b) Uredbe) te zakonska obveza vođenja popisa članova prema Zakonu o udrugama (čl. 6. st. 1. t. c)).</li>
+  <li>Članarine i financijsko poslovanje: zakonske obveze iz propisa o financijskom poslovanju i računovodstvu neprofitnih organizacija (čl. 6. st. 1. t. c)).</li>
+  <li>Newsletter: vaša privola (čl. 6. st. 1. t. a)), koju možete povući u svakom trenutku poveznicom za odjavu ili e-mailom.</li>
+  <li>Zaštita obrasca od zlouporabe: legitimni interes udruge (čl. 6. st. 1. t. f)).</li>
+</ul>
+<p>Podaci označeni kao obavezni potrebni su za odlučivanje o prijemu i vođenje popisa članova. Bez njih prijem nije moguć.</p>
+
+<h2>Primatelji</h2>
+<p>Podatke ne prodajemo i ne ustupamo u marketinške svrhe. Pristup imaju članovi Upravnog odbora koji vode članstvo. Podatke tehnički obrađuju pružatelj poslužitelja na kojem je stranica smještena i pružatelj usluge slanja e-pošte, isključivo po našem nalogu. Podaci o uplatama prolaze kroz banku. Popis članova dostupan je na uvid članovima i nadležnim tijelima na njihov zahtjev, u skladu sa Statutom i zakonom.</p>
+
+<h2>Rok čuvanja</h2>
+<ul>
+  <li>Podatke članova čuvamo dok traje članstvo, a nakon prestanka članstva onoliko dugo koliko to zahtijevaju propisi.</li>
+  <li>Isprave o uplatama čuvamo u rokovima propisanim za financijsku dokumentaciju.</li>
+  <li>Prijave o kojima je donesena odluka o odbijanju brišemo najkasnije godinu dana nakon odluke.</li>
+  <li>Podatke za newsletter čuvamo do odjave.</li>
+</ul>
+
+<h2>Vaša prava</h2>
+<p>Imate pravo na pristup svojim podacima, ispravak, brisanje, ograničenje obrade, prigovor na obradu temeljenu na legitimnom interesu, prenosivost podataka te povlačenje privole. Zahtjev pošaljite na {{ cfg.ORG_EMAIL }}. Pritužbu možete podnijeti Agenciji za zaštitu osobnih podataka (azop.hr).</p>
+
+<h2>Kolačići</h2>
+<p>Javni dio stranice ne koristi kolačiće za praćenje ni analitiku i ne učitava sadržaje trećih strana. Administracija udruge koristi samo nužni kolačić prijave.</p>
+{% else %}
+<h1>Privacy notice</h1>
+<p>This notice explains how the association Academia de la Vida processes personal data collected through this website, the application form and the newsletter, in accordance with the General Data Protection Regulation (EU) 2016/679.</p>
+
+<h2>Controller</h2>
+<p>{{ cfg.ORG_NAME_FULL_EN }}, {{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }}, Croatia, OIB {{ cfg.ORG_OIB }}. Contact for questions about personal data: {{ cfg.ORG_EMAIL }}.</p>
+
+<h2>What data we process</h2>
+<ul>
+  <li>Data from the application form: full name, email, phone (optional), OIB or an indication that the person has no Croatian OIB together with their country of residence, date of birth, type of membership and fee category, occupation or area of interest (optional) and the chosen language.</li>
+  <li>Membership data: date of admission, membership period, date and reason for the end of membership.</li>
+  <li>Payment data: amount, date, payer name, reference and payment description.</li>
+  <li>For the newsletter: email, name and language.</li>
+  <li>Technical data: the IP address from which the application was sent, to protect the form from misuse.</li>
+</ul>
+
+<h2>Purposes and legal bases</h2>
+<ul>
+  <li>Admission, membership management, the membership register and messages about membership: joining the association and the membership relationship (Art. 6(1)(b) GDPR) and the legal obligation to keep a membership register under the Croatian Associations Act (Art. 6(1)(c)).</li>
+  <li>Membership fees and financial management: legal obligations under the rules on financial management and accounting of non-profit organisations (Art. 6(1)(c)).</li>
+  <li>Newsletter: your consent (Art. 6(1)(a)), which you can withdraw at any time using the unsubscribe link or by email.</li>
+  <li>Protecting the form from misuse: the association's legitimate interest (Art. 6(1)(f)).</li>
+</ul>
+<p>Data marked as required is needed to decide on admission and to keep the membership register. Without it, admission is not possible.</p>
+
+<h2>Recipients</h2>
+<p>We do not sell your data or share it for marketing. Access is limited to the members of the Management Board who manage membership. Data is technically processed by the provider of the server hosting this website and by the email delivery provider, only on our instructions. Payment data passes through the bank. The membership register is available for inspection by members and competent authorities on request, in accordance with the Statute and the law.</p>
+
+<h2>Retention</h2>
+<ul>
+  <li>Member data is kept for as long as the membership lasts and, after it ends, for as long as the law requires.</li>
+  <li>Payment records are kept for the periods required for financial documentation.</li>
+  <li>Applications that have been rejected are deleted no later than one year after the decision.</li>
+  <li>Newsletter data is kept until you unsubscribe.</li>
+</ul>
+
+<h2>Your rights</h2>
+<p>You have the right to access your data, to rectification, erasure, restriction of processing, to object to processing based on legitimate interest, to data portability and to withdraw consent. Send your request to {{ cfg.ORG_EMAIL }}. You can lodge a complaint with the Croatian Personal Data Protection Agency (azop.hr).</p>
+
+<h2>Cookies</h2>
+<p>The public part of this website does not use tracking or analytics cookies and does not load third-party content. The association's administration area uses only a strictly necessary login cookie.</p>
+{% endif %}
+<p><a href="{{ home }}">{{ t.back_home }}</a></p>
+</article></div>
+{% endblock %}

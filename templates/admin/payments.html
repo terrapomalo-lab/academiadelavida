@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+{% block title %}Uplate{% endblock %}
+{% block main %}
+<h1>Uplate</h1>
+<p class="muted">Uplatu pojedinog člana najjednostavnije evidentirate na njegovoj stranici (Članovi → član → Evidentiraj uplatu). Uvoz izvoda služi za više uplata odjednom.</p>
+
+<form class="box" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="import">
+  <h2>Uvoz bankovnog izvoda (CSV)</h2>
+  <div class="row"><div><label for="file">Datoteka</label><input type="file" id="file" name="file" accept=".csv,text/csv" required></div><div><button class="btn" type="submit">Uvezi i upari</button></div></div>
+  <p class="muted">Opći oblik: prvi redak s nazivima stupaca <code>datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije</code>. Stvarni izvoz vaše banke prilagodit ćemo kad dostavite primjer. Ista transakcija ne može se evidentirati dvaput; nejasne uplate idu na pregled ispod.</p>
+</form>
+{% if result %}
+<div class="flash ok">Uvoz završen: uparenih članarina {{ result.matched }}, donacija {{ result.donations }}, za pregled {{ result.review }}, već evidentiranih (preskočeno) {{ result.duplicates }}, isplata preskočeno {{ result.skipped }}.{% if result.errors %} Neispravni redci: {{ result.errors|join('; ') }}{% endif %}</div>
+{% endif %}
+
+<h2>Za pregled ({{ review|length }})</h2>
+{% if not review %}<p class="muted">Nema nejasnih uplata.</p>{% else %}
+<div class="tbl"><table>
+  <thead><tr><th>Datum</th><th>Iznos</th><th>Platitelj</th><th>Poziv na broj / opis</th><th>Razlog</th><th>Radnja</th></tr></thead>
+  <tbody>{% for p in review %}
+  <tr>
+    <td>{{ p.booked_date }}</td><td class="num">{{ fmt_eur(p.amount_cents) }}</td><td>{{ p.payer or '' }}</td>
+    <td>{{ p.reference or '' }}<br><span class="muted">{{ p.description or '' }}</span></td>
+    <td class="muted">{{ p.review_reason or '' }}</td>
+    <td>
+      <form method="post" class="row">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="payment_id" value="{{ p.id }}">
+        <div><select name="due_id" aria-label="Članarina"><option value="">– članarina –</option>{% for d in open_dues %}<option value="{{ d.id }}" {{ 'selected' if p.due_id == d.id }}>{{ d.full_name }} · {{ d.reference }} · {{ fmt_eur(d.amount_cents) }}</option>{% endfor %}</select></div>
+        <div><button class="btn sm" name="action" value="assign">Poveži</button></div>
+      </form>
+      <form method="post" class="row">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="payment_id" value="{{ p.id }}">
+        <button class="btn sec sm" name="action" value="donation">Donacija</button>
+        <button class="btn sec sm" name="action" value="ignore">Zanemari</button>
+      </form>
+    </td>
+  </tr>{% endfor %}</tbody>
+</table></div>{% endif %}
+
+<h2>Zadnje evidentirane uplate</h2>
+{% if not recent %}<p class="muted">Još nema uplata.</p>{% else %}
+<div class="tbl"><table>
+  <thead><tr><th>Datum</th><th>Iznos</th><th>Platitelj</th><th>Vrsta</th><th>Član</th><th>Status</th><th>Izvor</th></tr></thead>
+  <tbody>{% for p in recent %}
+  <tr><td>{{ p.booked_date }}</td><td class="num">{{ fmt_eur(p.amount_cents) }}</td><td>{{ p.payer or '' }}</td>
+      <td>{{ {'membership':'članarina','donation':'donacija'}.get(p.kind, 'nepoznato') }}</td><td>{{ p.full_name or '' }}</td>
+      <td>{% if p.status == 'matched' %}<span class="pill p-paid">evidentirano</span>{% elif p.status == 'review' %}<span class="pill p-open">pregled</span>{% else %}<span class="pill p-mute">zanemareno</span>{% endif %}</td>
+      <td>{{ 'ručno' if p.source == 'manual' else 'izvod' }}</td></tr>
+  {% endfor %}</tbody>
+</table></div>{% endif %}
+{% endblock %}

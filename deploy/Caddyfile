@@ -1,0 +1,14 @@
+# Caddy automatski pribavlja i obnavlja HTTPS certifikat.
+academiadelavida.hr {
+	encode gzip
+	reverse_proxy 127.0.0.1:8077 {
+		header_up X-Real-IP {remote_host}
+	}
+	request_body {
+		max_size 5MB
+	}
+}
+
+www.academiadelavida.hr {
+	redir https://academiadelavida.hr{uri} permanent
+}
