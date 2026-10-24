@@ -15,7 +15,7 @@
   <tr>
     <td><a href="{{ url_for('admin_member', app_id=r.id) }}">{{ r.public_no }}</a></td>
     <td>{{ r.full_name }}{% if r.needs_completion %} <span class="pill p-info">dopuna</span>{% endif %}</td>
-    <td>{{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}{{ ', student' if r.fee_cat == 'student' }}</td>
+    <td>{{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}{{ ', snižena' if r.fee_cat == 'student' }}</td>
     <td>{{ r.admitted_date }}</td>
     <td>{% if r.mstatus == 'active' %}<span class="pill p-paid">aktivno</span>{% else %}<span class="pill p-mute">prestalo {{ r.ended_date }}</span>{% endif %}</td>
     <td>{{ r.period_start }} – {{ r.period_end }}</td>

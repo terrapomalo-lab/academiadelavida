@@ -619,7 +619,7 @@ def create_app(overrides=None):
                     "Članarina", "Datum pristupanja", "Datum prestanka", "Razlog prestanka", "E-mail", "Telefon", "Treba dopuna"]
             rows = [[r["public_no"], r["full_name"], r["oib"] or "", "da" if r["no_oib"] else "", r["country"] or "", r["dob"],
                      "redovito" if r["member_type"] == "regular" else "pridruženo",
-                     "studentska" if r["fee_cat"] == "student" else "standardna", r["admitted_date"], r["ended_date"] or "",
+                     "snižena (studenti, umirovljenici)" if r["fee_cat"] == "student" else "standardna", r["admitted_date"], r["ended_date"] or "",
                      r["ended_reason"] or "", r["email"], r["phone"] or "", "da" if r["needs_completion"] else ""]
                     for r in con.execute("""SELECT a.*, m.admitted_date, m.ended_date, m.ended_reason FROM applications a
                                             JOIN memberships m ON m.application_id=a.id ORDER BY a.full_name COLLATE NOCASE""")]

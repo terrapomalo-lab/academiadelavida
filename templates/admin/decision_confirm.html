@@ -6,7 +6,7 @@
   <input type="hidden" name="csrf" value="{{ csrf_token() }}">
   <input type="hidden" name="kind" value="{{ kind }}">
   <p>Osobe obuhvaćene odlukom ({{ rows|length }}):</p>
-  <ul>{% for r in rows %}<li><input type="hidden" name="ids" value="{{ r.id }}">{{ r.public_no }} – {{ r.full_name }} ({{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}, {{ 'studentska' if r.fee_cat == 'student' else 'standardna' }} članarina){% if r.no_oib %} – <b>bez hrvatskog OIB-a, treba dopuna</b>{% endif %}</li>{% endfor %}</ul>
+  <ul>{% for r in rows %}<li><input type="hidden" name="ids" value="{{ r.id }}">{{ r.public_no }} – {{ r.full_name }} ({{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}, {{ 'snižena' if r.fee_cat == 'student' else 'standardna' }} članarina){% if r.no_oib %} – <b>bez hrvatskog OIB-a, treba dopuna</b>{% endif %}</li>{% endfor %}</ul>
   <div class="row">
     <div><label for="dd">Datum sjednice / odluke</label><input type="date" id="dd" name="decision_date" value="{{ today }}" max="{{ today }}" required></div>
     <div><label for="ref">Oznaka odluke ili zapisnika</label><input type="text" id="ref" name="reference" placeholder="npr. Zapisnik 2. sjednice UO" required></div>

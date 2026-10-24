@@ -60,9 +60,9 @@ def fee_cents(cfg, fee_cat):
 def labels(lang):
     if lang == "hr":
         return {"regular": "redovito", "associate": "pridruženo",
-                "standard": "50 € godišnje", "student": "20 € godišnje (studenti)"}
+                "standard": "50 € godišnje", "student": "20 € godišnje (studenti i umirovljenici)"}
     return {"regular": "full", "associate": "associate",
-            "standard": "€50 per year", "student": "€20 per year (students)"}
+            "standard": "€50 per year", "student": "€20 per year (students and retirees)"}
 
 
 def period_text(start_iso, end_iso, lang):

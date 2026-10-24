@@ -28,7 +28,7 @@
     <div><label for="nt">Interna napomena</label><input type="text" id="nt" name="admin_note" value="{{ a.admin_note or '' }}"></div>
   </div>
   <label class="chk"><input type="checkbox" name="needs_completion" value="1" {{ 'checked' if a.needs_completion }}> Treba dopunu podataka prije konačnog upisa</label>
-  <p class="muted">Vrsta: {{ 'redovito' if a.member_type == 'regular' else 'pridruženo' }} · članarina: {{ 'studentska' if a.fee_cat == 'student' else 'standardna' }} · zanimanje/interes: {{ a.interests or '–' }} · prijava: {{ a.created_at[:16]|replace('T',' ') }} ({{ a.source }})</p>
+  <p class="muted">Vrsta: {{ 'redovito' if a.member_type == 'regular' else 'pridruženo' }} · članarina: {{ 'snižena' if a.fee_cat == 'student' else 'standardna' }} · zanimanje/interes: {{ a.interests or '–' }} · prijava: {{ a.created_at[:16]|replace('T',' ') }} ({{ a.source }})</p>
   <div><button class="btn" type="submit">Spremi podatke</button></div>
 </form>
 

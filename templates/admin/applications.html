@@ -17,7 +17,7 @@
         <td>{{ r.created_at[:10] }}</td>
         <td>{{ r.full_name }}</td>
         <td>{{ 'redovito' if r.member_type == 'regular' else 'pridruženo' }}</td>
-        <td>{{ 'studentska' if r.fee_cat == 'student' else 'standardna' }}</td>
+        <td>{{ 'snižena' if r.fee_cat == 'student' else 'standardna' }}</td>
         <td>{% if r.no_oib %}<span class="pill p-info">nema hrv. OIB – {{ r.country }}</span>{% else %}{{ r.oib }}{% endif %}</td>
         <td>{{ r.dob }}</td>
         <td>{{ r.email }}</td>
