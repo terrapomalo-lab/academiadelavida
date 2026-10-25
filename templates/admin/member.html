@@ -27,8 +27,15 @@
     <div><label for="lg">Jezik poruka</label><select id="lg" name="lang"><option value="hr" {{ 'selected' if a.lang == 'hr' }}>hrvatski</option><option value="en" {{ 'selected' if a.lang == 'en' }}>engleski</option></select></div>
     <div><label for="nt">Interna napomena</label><input type="text" id="nt" name="admin_note" value="{{ a.admin_note or '' }}"></div>
   </div>
+  {% set pk = 'regular' if a.member_type == 'regular' else ('assoc_reduced' if a.fee_cat == 'student' else 'assoc') %}
+  <div class="row"><div><label for="pk">Članstvo i članarina</label><select id="pk" name="paket">
+    <option value="assoc" {{ 'selected' if pk == 'assoc' }}>Pridruženo – {{ cfg.FEE_ASSOC_EUR }} €</option>
+    <option value="assoc_reduced" {{ 'selected' if pk == 'assoc_reduced' }}>Pridruženo, studenti i umirovljenici – {{ cfg.FEE_REDUCED_EUR }} €</option>
+    <option value="regular" {{ 'selected' if pk == 'regular' }}>Redovito – {{ cfg.FEE_REGULAR_EUR }} €</option>
+  </select></div></div>
+  <p class="muted">Promjena članstva mijenja iznos neplaćene članarine. Već plaćene članarine ostaju kakve jesu.</p>
   <label class="chk"><input type="checkbox" name="needs_completion" value="1" {{ 'checked' if a.needs_completion }}> Treba dopunu podataka prije konačnog upisa</label>
-  <p class="muted">Vrsta: {{ 'redovito' if a.member_type == 'regular' else 'pridruženo' }} · članarina: {{ 'snižena' if a.fee_cat == 'student' else 'standardna' }} · zanimanje/interes: {{ a.interests or '–' }} · prijava: {{ a.created_at[:16]|replace('T',' ') }} ({{ a.source }})</p>
+  <p class="muted">Zanimanje/interes: {{ a.interests or '–' }} · prijava: {{ a.created_at[:16]|replace('T',' ') }} ({{ a.source }})</p>
   <div><button class="btn" type="submit">Spremi podatke</button></div>
 </form>
 

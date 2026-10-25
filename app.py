@@ -454,7 +454,16 @@ def create_app(overrides=None):
                                  1 if request.form.get("needs_completion") else 0, request.form.get("admin_note") or None,
                                  request.form.get("lang") if request.form.get("lang") in ("hr", "en") else a["lang"], app_id))
                     DB.audit(con, g.admin, "update_member", a["public_no"])
-                    flash("Podaci su spremljeni.", "ok")
+                    pkg = S.PACKAGES.get(request.form.get("paket", ""))
+                    if pkg and pkg != (a["member_type"], a["fee_cat"]):
+                        con.execute("UPDATE applications SET member_type=?, fee_cat=? WHERE id=?", (pkg[0], pkg[1], app_id))
+                        a2 = con.execute("SELECT * FROM applications WHERE id=?", (app_id,)).fetchone()
+                        con.execute("""UPDATE dues SET amount_cents=? WHERE status='open' AND membership_id IN
+                                       (SELECT id FROM memberships WHERE application_id=?)""", (S.fee_cents(cfg, a2, current=True), app_id))
+                        DB.audit(con, g.admin, "change_package", f"{a['public_no']} {request.form.get('paket')}")
+                        flash("Podaci su spremljeni. Članstvo je promijenjeno; nova obavijest o uplati može se poslati ispod.", "ok")
+                    else:
+                        flash("Podaci su spremljeni.", "ok")
             elif action == "paid":
                 try:
                     cents = S.parse_amount(request.form.get("amount", ""))
@@ -508,7 +517,7 @@ def create_app(overrides=None):
             f = request.form
             form = dict(f)
             form.update({"statut": "1", "punoljetnost": "1", "privatnost": "1"})
-            d, errs = S.validate_application(form, f.get("jezik", "hr"))
+            d, errs = S.validate_application(form, f.get("jezik", "hr"), public=False)
             errs = [e for e in errs if e not in ("err_minor",)]
             try:
                 adm = date.fromisoformat(f.get("admitted_date", ""))

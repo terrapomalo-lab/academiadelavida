@@ -195,7 +195,7 @@ def test_decision_requires_confirmation(env):
     assert con.execute("SELECT app_status FROM applications").fetchone()[0] == "submitted"
 
 
-@pytest.mark.parametrize("fee,cents", [("assoc", 5000), ("assoc_reduced", 2000), ("regular", 15000)])
+@pytest.mark.parametrize("fee,cents", [("assoc", 5000), ("assoc_reduced", 2000)])
 def test_admission_notice_and_codes(env, fee, cents):
     app, c, con = env
     tok, aid = full_admission(app, c, con, paket=fee, ime="Ivana Šimić-Đurić")
@@ -382,7 +382,7 @@ def test_donation_code_visible_without_click(env):
     assert text.split("\n")[2] == "000000000002000"
 
 
-@pytest.mark.parametrize("fee,cents", [("assoc", 5000), ("assoc_reduced", 2000), ("regular", 15000)])
+@pytest.mark.parametrize("fee,cents", [("assoc", 5000), ("assoc_reduced", 2000)])
 def test_immediate_payment_after_application(env, fee, cents):
     app, c, con = env
     r = c.post("/api/prijava", data=form(paket=fee))
@@ -461,7 +461,11 @@ def test_fee_packages_and_legacy_price(env):
     assert S2.fee_cents(app.config, old) == 5000 and S2.fee_cents(app.config, new) == 15000
     assert S2.fee_cents(app.config, old, current=True) == 15000   # obnova po važećoj odluci
     html = c.get("/").get_data(as_text=True)
-    assert "150 €" in html and "Pridruženo članstvo – studenti i umirovljenici" in html
+    assert "150 €" not in html and "Pridruženo članstvo – studenti i umirovljenici" in html
+    assert 'value="regular"' not in html and "mailto:" in html
+    # redovito članstvo ne može se prijaviti preko stranice
+    r = c.post("/api/prijava", data=form(paket="regular"))
+    assert r.status_code == 400 and "err_regular_email" in r.json["errors"]
 
 
 def test_social_links_hidden_until_set(env):
@@ -470,3 +474,27 @@ def test_social_links_hidden_until_set(env):
     app.config["SOCIAL_LINKS"] = [("YouTube", "https://www.youtube.com/@primjer"), ("Facebook", "")]
     html = c.get("/").get_data(as_text=True)
     assert "Pratite nas" in html and "https://www.youtube.com/@primjer" in html and ">Facebook<" not in html
+
+
+
+def test_admin_change_package(env):
+    app, c, con = env
+    tok, aid = full_admission(app, c, con, paket="assoc")
+    a = con.execute("SELECT * FROM applications WHERE id=?", (aid,)).fetchone()
+    data = {"csrf": tok, "action": "update", "full_name": a["full_name"], "email": a["email"], "oib": a["oib"],
+            "dob": a["dob"], "lang": "hr", "paket": "regular"}
+    r = c.post(f"/admin/clan/{aid}", data=data)
+    assert r.status_code == 302
+    a = con.execute("SELECT member_type, fee_cat FROM applications WHERE id=?", (aid,)).fetchone()
+    assert tuple(a) == ("regular", "standard")
+    assert con.execute("SELECT amount_cents FROM dues WHERE status='open'").fetchone()[0] == 15000
+
+
+def test_old_applications_pay_current_fees(env):
+    app, c, con = env
+    c.post("/api/prijava", data=form(paket="regular"))
+    c.post("/api/prijava", data=form())
+    con.execute("UPDATE applications SET member_type='regular'")
+    con.execute("UPDATE applications SET created_at='2026-10-23T10:00:00'")
+    a = con.execute("SELECT * FROM applications").fetchone()
+    assert S.fee_cents(app.config, a) == 15000

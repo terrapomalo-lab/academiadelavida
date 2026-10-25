@@ -90,7 +90,7 @@ def period_text(start_iso, end_iso, lang):
 
 # ------------------------------------------------------------------ prijava
 
-def validate_application(form, lang, today=None):
+def validate_application(form, lang, today=None, public=True):
     """Vraća (podaci, popis ključeva pogrešaka). Poslužitelj je mjerodavan; isto provjerava i preglednik."""
     today = today or date.today()
     g = lambda k: (form.get(k) or "").strip()
@@ -143,6 +143,8 @@ def validate_application(form, lang, today=None):
             errs.append("err_fee")
         elif d["member_type"] == "regular" and d["fee_cat"] == "student":
             errs.append("err_reduced")
+    if public and d.get("member_type") == "regular":
+        errs.append("err_regular_email")   # redovito članstvo samo na upit e-mailom
     if not form.get("statut"):
         errs.append("err_statute")
     if not form.get("punoljetnost"):

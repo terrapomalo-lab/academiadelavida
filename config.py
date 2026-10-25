@@ -48,9 +48,9 @@ class Config:
     FEE_REGULAR_EUR = 150
     FEE_ASSOC_EUR = 50
     FEE_REDUCED_EUR = 20          # samo uz pridruženo članstvo
-    # Prijave zaprimljene prije ovog datuma plaćaju po prethodnoj odluci (50 € / 20 €, neovisno o vrsti članstva)
-    FEES_V2_FROM = _env("ADV_FEES_V2_FROM", "2026-10-25")
-    FEE_STANDARD_EUR = 50         # prethodna odluka od 22. 10. 2026.
+    # Prazno = sve prijave po ovoj odluci. (Datum se upisuje samo ako bi starije prijave trebale plaćati po staroj cijeni.)
+    FEES_V2_FROM = _env("ADV_FEES_V2_FROM", "")
+    FEE_STANDARD_EUR = 50         # stara cijena, koristi se samo ako je FEES_V2_FROM postavljen
     FEE_STUDENT_EUR = 20
 
     # Društvene mreže: upisati punu adresu profila; prazno = ne prikazuje se

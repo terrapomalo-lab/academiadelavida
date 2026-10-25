@@ -45,7 +45,7 @@
 
 <section class="band" id="poziv">
   <div class="wrap letter">
-    <div class="frame"><img src="{{ url_for('static', filename='img/vida.webp') }}" width="640" height="800" alt="{{ t.letter_photo_alt }}" loading="lazy"></div>
+    <div class="frame"><img src="{{ url_for('static', filename='img/vida.webp') }}?v=3" width="640" height="800" alt="{{ t.letter_photo_alt }}" loading="lazy"></div>
     <div class="quote">
       <p class="letter-label">{{ t.letter_h }}</p>
       {% for p in t.letter_p %}<p{% if loop.first %} class="lead-q"{% endif %}>{{ p }}</p>{% endfor %}
@@ -77,11 +77,11 @@
     <div class="member-info">
       <div class="sec-head"><h2>{{ t.member_h }}</h2><p>{{ t.member_p }}</p></div>
       <div class="fees">
-        {% for amt, label, note in t.fees %}<div class="fee{{ ' fee-main' if loop.first }}"><span class="amt">{{ amt }} <small>{{ t.per_year }}</small></span><span class="fee-label">{{ label }}</span><span class="fee-note">{{ note }}</span></div>{% endfor %}
+        {% for amt, label, note in t.fees %}<div class="fee{{ ' fee-main' if loop.first }}"><span class="amt">{{ amt }} <small>{{ t.per_year }}</small></span><span class="fee-label">{{ label }}</span>{% if note %}<span class="fee-note">{{ note }}</span>{% endif %}</div>{% endfor %}
       </div>
       <div class="types">
         <div><h3>{{ t.type_assoc_h }}</h3><p>{{ t.type_assoc_p }}</p></div>
-        <div><h3>{{ t.type_regular_h }}</h3><p>{{ t.type_regular_p }}</p></div>
+        <div><h3>{{ t.type_regular_h }}</h3><p>{{ t.type_regular_p }}</p><p>{{ t.type_regular_contact }} <a href="mailto:{{ cfg.ORG_EMAIL }}?subject={{ 'Redovito članstvo' if lang == 'hr' else 'Full membership' }}">{{ cfg.ORG_EMAIL }}</a></p></div>
         <p class="note">{{ t.type_honor }}</p>
       </div>
       <div>
@@ -149,7 +149,7 @@
     <div class="people">
       {% for key, name, role, bio in t.people %}
       <article class="person">
-        <div class="frame"><img src="{{ url_for('static', filename='img/' ~ key ~ '.webp') }}" width="640" height="800" alt="{{ name }}" loading="lazy"></div>
+        <div class="frame"><img src="{{ url_for('static', filename='img/' ~ key ~ '.webp') }}?v=3" width="640" height="800" alt="{{ name }}" loading="lazy"></div>
         <span class="role">{{ role }}</span>
         <h3>{{ name }}</h3>
         <p>{{ bio }}</p>
