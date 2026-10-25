@@ -56,6 +56,12 @@ def login(c):
         return s["csrf"]
 
 
+def body(msg):
+    for p in msg.walk():
+        if p.get_content_type() == "text/plain":
+            return p.get_payload(decode=True).decode()
+
+
 def eml(app, kind):
     d = app.config["DATA_DIR"] / "mail-preview"
     files = sorted(d.glob(f"*-{kind}.eml"))
@@ -123,8 +129,8 @@ def test_application_without_oib_en(env):
     assert r.json["ok"]
     a = con.execute("SELECT * FROM applications WHERE email='janez@example.si'").fetchone()
     assert a["oib"] is None and a["no_oib"] == 1 and a["needs_completion"] == 1 and a["lang"] == "en"
-    body = eml(app, "confirmation")[-1].get_payload(decode=True).decode()
-    assert "do not have a Croatian OIB" in body and "€20 per year" in body
+    b = body(eml(app, "confirmation")[-1])
+    assert "do not have a Croatian OIB" in b and "€20 per year" in b and "pay the membership fee right away" in b
 
 
 def test_nojs_form_post(env):
@@ -269,7 +275,7 @@ def test_statement_import(env):
     r = c.post("/admin/uplate", data={"csrf": tok, "action": "import", "file": (io.BytesIO(csv_text.encode()), "izvod.csv")},
                content_type="multipart/form-data")
     page = r.get_data(as_text=True)
-    assert "uparenih članarina 1, donacija 1, za pregled 1, već evidentiranih (preskočeno) 1" in page
+    assert "uparenih članarina 1, uplata prije prijema 0, donacija 1, za pregled 1, već evidentiranih (preskočeno) 1" in page
     assert con.execute("SELECT status FROM dues").fetchone()[0] == "paid"
     # ponovni uvoz iste datoteke ne stvara duplikate
     res = S.import_statement(con, app.config, "tajnik", csv_text.encode())
@@ -355,3 +361,87 @@ def test_hub3_cleaning():
     assert P.hub3_clean("Đurđa Žižić", 30) == "Đurđa Žižić"
     assert len(P.hub3_clean("x" * 50, 25)) == 25
     assert P.amount_field(5000) == "000000000005000"
+
+
+# ------------------------------------------------------------------ nove funkcije (25. 10.)
+
+def test_consent_links_are_real_links(env):
+    app, c, _ = env
+    for url, needle in (("/", '<a href="/dokumenti/statut.pdf" target="_blank" rel="noopener">Statut</a>'),
+                        ("/", '<a href="/privatnost" target="_blank" rel="noopener">obavijest o privatnosti</a>'),
+                        ("/en/", '<a href="/en/privacy" target="_blank" rel="noopener">privacy notice</a>')):
+        html = c.get(url).get_data(as_text=True)
+        assert needle in html and "&lt;a href" not in html
+
+
+def test_donation_code_visible_without_click(env):
+    app, c, _ = env
+    html = c.get("/").get_data(as_text=True)
+    assert 'id="don-box" hidden' not in html and "/donacija/hub3.png?iznos=20.00" in html
+    fmt, text = decode(c.get("/donacija/hub3.png?iznos=20.00").data)
+    assert text.split("\n")[2] == "000000000002000"
+
+
+@pytest.mark.parametrize("fee,cents", [("standard", 5000), ("student", 2000)])
+def test_immediate_payment_after_application(env, fee, cents):
+    app, c, con = env
+    r = c.post("/api/prijava", data=form(clanarina=fee))
+    pay = r.json["pay"]
+    assert pay["rows"][0][2] == ("50,00" if cents == 5000 else "20,00")
+    a = con.execute("SELECT * FROM applications").fetchone()
+    ref = f"{a['year']}-{a['seq']:04d}-1"
+    assert pay["rows"][3][1] == "HR00 " + ref
+    fmt, text = decode(c.get(pay["hub3"]).data)
+    lines = text.split("\n")
+    assert lines[2] == f"{cents:015d}" and lines[11] == ref
+    assert c.get(pay["pdf"]).data[:4] == b"%PDF"
+    page = c.get(f"/p/{a['token']}").get_data(as_text=True)
+    assert "HR00 " + ref in page and "uplatu vraćamo" in page
+    m = eml(app, "confirmation")[-1]
+    names = [p.get_filename() for p in m.walk() if p.get_filename()]
+    assert any(n.endswith(".pdf") for n in names) and any(n.endswith(".png") for n in names)
+    assert ref in body(m)
+
+
+def test_prepayment_matched_on_admission_via_import(env):
+    app, c, con = env
+    c.post("/api/prijava", data=form())
+    a = con.execute("SELECT * FROM applications").fetchone()
+    ref = f"{a['year']}-{a['seq']:04d}-1"
+    csv_text = f"datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije\n{date.today().isoformat()};50,00;Ana Horvat;HR00 {ref};Članarina;X1\n"
+    res = S.import_statement(con, app.config, "tajnik", csv_text.encode())
+    assert res["prepaid"] == 1
+    assert c.get(f"/p/{a['token']}/hub3.png").status_code == 404   # već plaćeno: kod se više ne nudi
+    tok = login(c)
+    html = c.get("/admin/prijave").get_data(as_text=True)
+    assert "uplaćeno" in html
+    c.post("/admin/odluka", data={"csrf": tok, "kind": "admit", "ids": str(a["id"]), "decision_date": date.today().isoformat(),
+                                  "reference": "Zapisnik 2. sjednice UO", "confirm": "1"})
+    d = con.execute("SELECT * FROM dues").fetchone()
+    assert d["status"] == "paid" and d["reference"] == ref
+    assert con.execute("SELECT status, due_id FROM payments").fetchone()[:] == ("matched", d["id"])
+    w = body(eml(app, "welcome")[-1])
+    assert "uplata članarine je zaprimljena" in w and "HR00" not in w   # bez ponovnog traženja uplate
+
+
+def test_manual_prepayment_and_rejection_warning(env):
+    app, c, con = env
+    c.post("/api/prijava", data=form())
+    a = con.execute("SELECT * FROM applications").fetchone()
+    tok = login(c)
+    c.post(f"/admin/clan/{a['id']}", data={"csrf": tok, "action": "prepaid", "amount": "50,00", "booked_date": date.today().isoformat()})
+    assert con.execute("SELECT status FROM payments").fetchone()[0] == "prepaid"
+    r = c.post(f"/admin/clan/{a['id']}", data={"csrf": tok, "action": "prepaid", "amount": "50,00", "booked_date": date.today().isoformat()})
+    assert con.execute("SELECT COUNT(*) FROM payments").fetchone()[0] == 1
+    html = c.post("/admin/odluka/pregled", data={"csrf": tok, "kind": "reject", "ids": str(a["id"])}).get_data(as_text=True)
+    assert "uplatu treba vratiti" in html
+
+
+def test_prepayment_wrong_amount_goes_to_review_on_admission(env):
+    app, c, con = env
+    c.post("/api/prijava", data=form(clanarina="student"))
+    a = con.execute("SELECT * FROM applications").fetchone()
+    S.record_prepayment(con, app.config, "tajnik", a, date.today().isoformat(), 5000)
+    S.record_decision(con, app.config, "tajnik", "admit", date.today().isoformat(), "Z", [a["id"]])
+    assert con.execute("SELECT status FROM dues").fetchone()[0] == "open"
+    assert con.execute("SELECT status FROM payments").fetchone()[0] == "review"

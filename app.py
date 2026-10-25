@@ -42,12 +42,11 @@ def create_app(overrides=None):
     def inject():
         return {"cfg": cfg, "fmt_eur": P.fmt_eur, "fmt_date": P.fmt_date, "csrf_token": csrf_token}
 
-    @app.template_filter("fill")
-    def fill(s, **kw):
-        out = escape(s)
-        for k, v in kw.items():
-            out = out.replace("{" + k + "}", Markup(v))
-        return Markup(out)
+    @app.template_filter("linkify")
+    def linkify(s, placeholder, url, label):
+        """Umetne poveznicu u prevedeni tekst; sve se ispravno escapea."""
+        link = Markup('<a href="{}" target="_blank" rel="noopener">{}</a>').format(url, label)
+        return Markup(escape(s)).replace("{" + placeholder + "}", link)
 
     @app.after_request
     def headers(resp):
@@ -124,7 +123,7 @@ def create_app(overrides=None):
         sent = False
         try:
             con.execute("BEGIN IMMEDIATE")
-            oid = S.queue_confirmation(con, a)
+            oid = S.queue_confirmation(con, a, cfg)
             DB.audit(con, "web", "application", a["public_no"])
             con.execute("COMMIT")
             s, _f = mailer.send_outbox(con, cfg, ids=[oid], batch=1, include_failed=False)
@@ -140,7 +139,25 @@ def create_app(overrides=None):
                  t["ok_next"]]
         if a["no_oib"]:
             parts.append(t["ok_no_oib"])
-        return {"ok": True, "public_no": a["public_no"], "mail_sent": sent, "title": t["ok_h"], "paragraphs": parts}, 200
+        due = S.prepay_due(cfg, a)
+        pay = P.membership_payment(cfg, a, due, lang)
+        payinfo = {
+            "title": t["ok_pay_h"],
+            "rows": [[t["pay_amount"], P.fmt_eur(due["amount_cents"], lang),
+                      ("%d,%02d" if lang == "hr" else "%d.%02d") % divmod(due["amount_cents"], 100)],
+                     [t["pay_recipient"], f"{cfg['ORG_NAME']}, {cfg['ORG_STREET']}, {cfg['ORG_POSTCODE_CITY']}", None],
+                     [t["pay_iban"], cfg["ORG_IBAN"], None],
+                     [t["pay_model_ref"], f"HR00 {due['reference']}", None],
+                     [t["pay_desc"], pay["description"], None]],
+            "hub3": url_for("pay_hub3", token=a["token"]),
+            "hub3_dl": url_for("pay_hub3", token=a["token"], dl=1),
+            "epc": url_for("pay_epc", token=a["token"]),
+            "pdf": url_for("pay_pdf", token=a["token"], lang=lang),
+            "page": cfg["BASE_URL"] + url_for("pay_page", token=a["token"]),
+            "page_label": t["ok_pay_page"],
+        }
+        return {"ok": True, "public_no": a["public_no"], "mail_sent": sent, "title": t["ok_h"], "paragraphs": parts,
+                "pay": payinfo}, 200
 
     @app.post("/api/prijava")
     def api_apply():
@@ -162,53 +179,47 @@ def create_app(overrides=None):
             abort(404)
         return a
 
-    def current_due(a):
-        return DB.get_db().execute("""SELECT d.* FROM dues d JOIN memberships m ON m.id=d.membership_id
-            WHERE m.application_id=? ORDER BY (d.status='open') DESC, d.period_index DESC LIMIT 1""", (a["id"],)).fetchone()
+    def _png(data, name, download):
+        return send_file(io.BytesIO(data), mimetype="image/png", as_attachment=download, download_name=name)
+
+    def _payable(a, lang=None):
+        return S.payable(DB.get_db(), cfg, a, lang or a["lang"])
 
     @app.get("/p/<token>")
     def pay_page(token):
         a = app_by_token(token)
         lang = request.args.get("lang") if request.args.get("lang") in ("hr", "en") else a["lang"]
-        due = current_due(a)
-        pay = P.membership_payment(cfg, a, due, lang) if due else None
-        return render_template("pay.html", t=i18n.T[lang], lang=lang, a=a, due=due, pay=pay,
-                               period=S.period_text(due["period_start"], due["period_end"], lang) if due else "",
+        st = _payable(a, lang)
+        return render_template("pay.html", t=i18n.T[lang], lang=lang, a=a, st=st,
                                alt_url=url_for("pay_page", token=token, lang=i18n.T[lang]["other_lang"]),
                                home=url_for("index_hr") if lang == "hr" else url_for("index_en"))
 
-    def _png(data, name, download):
-        return send_file(io.BytesIO(data), mimetype="image/png", as_attachment=download, download_name=name)
+    def _open_pay(token):
+        a = app_by_token(token)
+        st = _payable(a)
+        if st["state"] not in ("prepay", "open"):
+            abort(404)
+        return a, st
 
     @app.get("/p/<token>/hub3.png")
     def pay_hub3(token):
-        a = app_by_token(token)
-        due = current_due(a)
-        if not due or due["status"] != "open":
-            abort(404)
-        pay = P.membership_payment(cfg, a, due, a["lang"])
-        return _png(P.hub3_png(pay["hub3"], scale=4), f"kod-za-placanje-{a['public_no']}.png", request.args.get("dl") == "1")
+        a, st = _open_pay(token)
+        return _png(P.hub3_png(st["pay"]["hub3"], scale=4), f"kod-za-placanje-{a['public_no']}.png", request.args.get("dl") == "1")
 
     @app.get("/p/<token>/epc.png")
     def pay_epc(token):
-        a = app_by_token(token)
-        due = current_due(a)
-        if not due or due["status"] != "open":
-            abort(404)
-        pay = P.membership_payment(cfg, a, due, a["lang"])
-        return _png(P.epc_png(pay["epc"]), f"epc-qr-{a['public_no']}.png", request.args.get("dl") == "1")
+        a, st = _open_pay(token)
+        return _png(P.epc_png(st["pay"]["epc"]), f"epc-qr-{a['public_no']}.png", request.args.get("dl") == "1")
 
     @app.get("/p/<token>/obavijest.pdf")
     def pay_pdf(token):
         a = app_by_token(token)
-        due = current_due(a)
-        if not due:
-            abort(404)
         lang = request.args.get("lang") if request.args.get("lang") in ("hr", "en") else a["lang"]
-        pay = P.membership_payment(cfg, a, due, lang)
-        pdf = P.notice_pdf(cfg, pay, lang, member_name=a["full_name"], public_no=a["public_no"],
-                           period=S.period_text(due["period_start"], due["period_end"], lang),
-                           due_date=P.fmt_date(due["due_date"], lang))
+        st = _payable(a, lang)
+        if st["state"] not in ("prepay", "open", "paid"):
+            abort(404)
+        pdf = P.notice_pdf(cfg, st["pay"], lang, member_name=a["full_name"], public_no=a["public_no"],
+                           period=st["period"], due_date=st["due_text"])
         return send_file(io.BytesIO(pdf), mimetype="application/pdf", as_attachment=True,
                          download_name=f"obavijest-o-uplati-{a['public_no']}.pdf")
 
@@ -322,6 +333,7 @@ def create_app(overrides=None):
             "expiring": c("""SELECT COUNT(*) FROM dues d JOIN memberships m ON m.id=d.membership_id WHERE m.status='active' AND d.status='paid'
                              AND d.period_end BETWEEN ? AND ? AND d.period_index=(SELECT MAX(period_index) FROM dues x WHERE x.membership_id=d.membership_id)""", today, soon),
             "review": c("SELECT COUNT(*) FROM payments WHERE status='review'"),
+            "prepaid": c("SELECT COUNT(*) FROM payments WHERE status='prepaid'"),
             "failed": c("SELECT COUNT(*) FROM outbox WHERE status='failed'"),
             "queued": c("SELECT COUNT(*) FROM outbox WHERE status='queued'"),
             "subscribers": c("SELECT COUNT(*) FROM subscribers WHERE unsubscribed_at IS NULL"),
@@ -332,8 +344,10 @@ def create_app(overrides=None):
     @app.get("/admin/prijave")
     @admin_required
     def admin_applications():
-        rows = DB.get_db().execute("SELECT * FROM applications WHERE app_status='submitted' ORDER BY id").fetchall()
-        return render_template("admin/applications.html", rows=rows, today=date.today().isoformat())
+        con = DB.get_db()
+        rows = con.execute("SELECT * FROM applications WHERE app_status='submitted' ORDER BY id").fetchall()
+        paid = {r["id"]: S.prepayment(con, r) for r in rows}
+        return render_template("admin/applications.html", rows=rows, paid=paid, today=date.today().isoformat())
 
     @app.post("/admin/odluka/pregled")
     @admin_required
@@ -344,7 +358,9 @@ def create_app(overrides=None):
             flash("Odaberite barem jednu prijavu i vrstu odluke.", "err")
             return redirect(url_for("admin_applications"))
         rows = DB.get_db().execute(f"SELECT * FROM applications WHERE app_status='submitted' AND id IN ({','.join('?'*len(ids))}) ORDER BY id", ids).fetchall()
-        return render_template("admin/decision_confirm.html", rows=rows, kind=kind, today=date.today().isoformat())
+        con = DB.get_db()
+        paid = {r["id"]: S.prepayment(con, r) for r in rows}
+        return render_template("admin/decision_confirm.html", rows=rows, kind=kind, paid=paid, today=date.today().isoformat())
 
     @app.post("/admin/odluka")
     @admin_required
@@ -451,6 +467,15 @@ def create_app(overrides=None):
                 if ok:
                     mailer.send_outbox(con, cfg, batch=10)
                 flash(msg, "ok" if ok else "err")
+            elif action == "prepaid":
+                try:
+                    cents = S.parse_amount(request.form.get("amount", ""))
+                    bdate = S.parse_date(request.form.get("booked_date", ""))
+                except ValueError as e:
+                    flash(f"Neispravan unos: {e}", "err")
+                    return redirect(url_for("admin_member", app_id=app_id))
+                ok, msg = S.record_prepayment(con, cfg, g.admin, a, bdate, cents, request.form.get("note", ""))
+                flash(msg, "ok" if ok else "err")
             elif action == "resend_notice":
                 due = con.execute("SELECT * FROM dues WHERE id=?", (int(request.form["due_id"]),)).fetchone()
                 if due and due["status"] == "open":
@@ -470,7 +495,9 @@ def create_app(overrides=None):
         dues = con.execute("SELECT * FROM dues WHERE membership_id=? ORDER BY period_index DESC", (m["id"],)).fetchall() if m else []
         mails = con.execute("SELECT * FROM outbox WHERE related_app_id=? ORDER BY id DESC", (app_id,)).fetchall()
         dec = con.execute("SELECT * FROM decisions WHERE id=?", (a["decision_id"],)).fetchone() if a["decision_id"] else None
-        return render_template("admin/member.html", a=a, m=m, dues=dues, mails=mails, dec=dec, today=date.today().isoformat())
+        pre = S.prepayment(con, a)
+        return render_template("admin/member.html", a=a, m=m, dues=dues, mails=mails, dec=dec, pre=pre,
+                               prepay=S.prepay_due(cfg, a), today=date.today().isoformat())
 
     @app.route("/admin/clan/novi", methods=["GET", "POST"])
     @admin_required
@@ -544,12 +571,13 @@ def create_app(overrides=None):
                 flash(msg, "ok" if ok else "err")
                 return redirect(url_for("admin_payments"))
         review = con.execute("SELECT * FROM payments WHERE status='review' ORDER BY booked_date").fetchall()
+        prepaid = con.execute("SELECT * FROM payments WHERE status='prepaid' ORDER BY booked_date").fetchall()
         open_dues = con.execute("""SELECT d.*, a.full_name, a.public_no FROM dues d JOIN memberships m ON m.id=d.membership_id
                                    JOIN applications a ON a.id=m.application_id WHERE d.status='open' ORDER BY a.full_name""").fetchall()
         recent = con.execute("""SELECT p.*, a.full_name FROM payments p LEFT JOIN dues d ON d.id=p.due_id
                                 LEFT JOIN memberships m ON m.id=d.membership_id LEFT JOIN applications a ON a.id=m.application_id
                                 ORDER BY p.id DESC LIMIT 100""").fetchall()
-        return render_template("admin/payments.html", review=review, open_dues=open_dues, recent=recent, result=result)
+        return render_template("admin/payments.html", review=review, prepaid=prepaid, open_dues=open_dues, recent=recent, result=result)
 
     # --- poruke
     @app.route("/admin/poruke", methods=["GET", "POST"])

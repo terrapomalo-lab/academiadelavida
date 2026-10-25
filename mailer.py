@@ -13,6 +13,21 @@ import services as S
 def _attachments(con, cfg, spec):
     out = []
     for att in json.loads(spec or "[]"):
+        if att["kind"].startswith("app_"):
+            a = con.execute("SELECT * FROM applications WHERE id=?", (att.get("app_id"),)).fetchone()
+            if not a:
+                continue
+            lang = a["lang"]
+            pay = P.membership_payment(cfg, a, S.prepay_due(cfg, a), lang)
+            if att["kind"] == "app_hub3_png":
+                out.append((f"kod-za-placanje-{a['public_no']}.png", "image", "png", P.hub3_png(pay["hub3"], scale=4)))
+            else:
+                pdf = P.notice_pdf(cfg, pay, lang, member_name=a["full_name"], public_no=a["public_no"],
+                                   period=("12 mjeseci od datuma prijema u članstvo" if lang == "hr" else "12 months from the date of admission"),
+                                   due_date=None)
+                name = ("obavijest-o-uplati-" if lang == "hr" else "payment-notice-") + a["public_no"] + ".pdf"
+                out.append((name, "application", "pdf", pdf))
+            continue
         due = con.execute("SELECT * FROM dues WHERE id=?", (att.get("due_id"),)).fetchone()
         if not due:
             continue

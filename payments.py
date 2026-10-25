@@ -262,6 +262,7 @@ def notice_pdf(cfg, pay, lang, *, member_name=None, public_no=None, period=None,
         ("Model i poziv na broj" if hr else "Model and reference", f"{pay['model']} {pay['reference']}".strip()),
         ("Opis plaćanja" if hr else "Payment description", pay["description"]),
     ]
+    rows = [r for r in rows if r[1]]
     for label, value in rows:
         c.setFont("AdvSans", 9)
         c.setFillColorRGB(0.33, 0.38, 0.45)

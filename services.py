@@ -165,6 +165,56 @@ def rate_limited(con, ip, limit):
     return n >= limit
 
 
+# ------------------------------------------------------------------ uplata (prije i nakon prijema)
+
+def prepay_due(cfg, a):
+    """Podaci za uplatu prve članarine odmah nakon prijave, prije odluke o prijemu.
+    Poziv na broj jednak je onome koji dobiva prva članarina nakon prijema, pa se uplata kasnije sama poveže."""
+    return {"amount_cents": fee_cents(cfg, a["fee_cat"]), "reference": P.membership_reference(a, 1),
+            "period_start": None, "period_end": None, "due_date": None, "status": "open"}
+
+
+def prepayment(con, a):
+    return con.execute("SELECT * FROM payments WHERE status='prepaid' AND reference=? ORDER BY id LIMIT 1",
+                       (P.membership_reference(a, 1),)).fetchone()
+
+
+def payable(con, cfg, a, lang):
+    """Stanje plaćanja za stranicu s uplatom. state: prepay | prepaid | open | paid | none"""
+    if a["app_status"] == "submitted":
+        if prepayment(con, a):
+            return {"state": "prepaid"}
+        due = prepay_due(cfg, a)
+        return {"state": "prepay", "due": due, "pay": P.membership_payment(cfg, a, due, lang),
+                "period": ("12 mjeseci od datuma prijema u članstvo" if lang == "hr"
+                           else "12 months from the date of admission"), "due_text": None}
+    due = con.execute("""SELECT d.* FROM dues d JOIN memberships m ON m.id=d.membership_id
+        WHERE m.application_id=? ORDER BY (d.status='open') DESC, d.period_index DESC LIMIT 1""", (a["id"],)).fetchone()
+    if not due:
+        return {"state": "none"}
+    st = "open" if due["status"] == "open" else ("paid" if due["status"] == "paid" else "none")
+    return {"state": st, "due": due, "pay": P.membership_payment(cfg, a, due, lang),
+            "period": period_text(due["period_start"], due["period_end"], lang),
+            "due_text": P.fmt_date(due["due_date"], lang)}
+
+
+def record_prepayment(con, cfg, actor, a, booked_date, amount_cents, note=""):
+    """Ručna oznaka uplate primljene prije odluke o prijemu."""
+    if a["app_status"] != "submitted":
+        return False, "Prijava više ne čeka odluku; uplatu evidentirajte kod članarine."
+    if prepayment(con, a):
+        return False, "Uplata prije prijema već je evidentirana."
+    try:
+        con.execute("""INSERT INTO payments(source, fingerprint, booked_date, amount_cents, reference, description, kind,
+                       status, review_reason, created_at, created_by) VALUES ('manual',?,?,?,?,?,'membership','prepaid',?,?,?)""",
+                    (f"prepaid:{a['id']}", booked_date, amount_cents, P.membership_reference(a, 1), note,
+                     "Uplata prije odluke o prijemu – povezuje se automatski nakon prijema", now_iso(), actor))
+    except sqlite3.IntegrityError:
+        return False, "Uplata prije prijema već je evidentirana."
+    audit(con, actor, "prepayment_manual", f"{a['public_no']} {booked_date} {amount_cents}")
+    return True, "Uplata je evidentirana. Nakon odluke o prijemu automatski će se povezati s članarinom."
+
+
 # ------------------------------------------------------------------ e-poruke (red)
 
 def queue_email(con, kind, to_addr, subject, body, attachments=None, app_id=None, status="queued"):
@@ -174,25 +224,33 @@ def queue_email(con, kind, to_addr, subject, body, attachments=None, app_id=None
     return con.execute("SELECT last_insert_rowid()").fetchone()[0]
 
 
-def queue_confirmation(con, a):
+def queue_confirmation(con, a, cfg=None):
     lab = labels(a["lang"])
-    s, b = i18n.email_confirmation(a["lang"], a, lab[a["fee_cat"]], lab[a["member_type"]])
-    return queue_email(con, "confirmation", a["email"], s, b, app_id=a["id"])
+    pay_txt = link = None
+    att = []
+    if cfg is not None:
+        due = prepay_due(cfg, a)
+        pay_txt = pay_lines(cfg, a, due, a["lang"])
+        link = f"{cfg['BASE_URL']}/p/{a['token']}"
+        att = [{"kind": "app_notice_pdf", "app_id": a["id"]}, {"kind": "app_hub3_png", "app_id": a["id"]}]
+    s, b = i18n.email_confirmation(a["lang"], a, lab[a["fee_cat"]], lab[a["member_type"]], pay_txt, link)
+    return queue_email(con, "confirmation", a["email"], s, b, att, app_id=a["id"])
 
 
 def pay_lines(cfg, a, due, lang):
     hr = lang == "hr"
     lines = [
         (("Iznos" if hr else "Amount"), P.fmt_eur(due["amount_cents"], lang)),
-        (("Razdoblje" if hr else "Period"), period_text(due["period_start"], due["period_end"], lang)),
-        (("Rok za uplatu" if hr else "Due by"), P.fmt_date(due["due_date"], lang)),
+        (("Razdoblje" if hr else "Period"), period_text(due["period_start"], due["period_end"], lang) if due["period_start"]
+         else ("12 mjeseci od datuma prijema u članstvo" if hr else "12 months from the date of admission")),
+        (("Rok za uplatu" if hr else "Due by"), P.fmt_date(due["due_date"], lang) if due["due_date"] else None),
         (("Primatelj" if hr else "Recipient"), f"{cfg['ORG_NAME']}, {cfg['ORG_STREET']}, {cfg['ORG_POSTCODE_CITY']}"),
         ("IBAN", cfg["ORG_IBAN"]),
         ("BIC/SWIFT", cfg["ORG_BIC"]),
         (("Model i poziv na broj" if hr else "Model and reference"), f"HR00 {due['reference']}"),
         (("Opis plaćanja" if hr else "Payment description"), f"Članarina {a['public_no']}"),
     ]
-    return "\n".join(f"{k}: {v}" for k, v in lines)
+    return "\n".join(f"{k}: {v}" for k, v in lines if v)
 
 
 # ------------------------------------------------------------------ odluka Upravnog odbora
@@ -225,7 +283,20 @@ def record_decision(con, cfg, actor, kind, decision_date, reference, app_ids, no
                         (mid, 1, start.isoformat(), end.isoformat(), fee_cents(cfg, a["fee_cat"]), ref,
                          due_date.isoformat(), now_iso()))
             due = con.execute("SELECT * FROM dues WHERE membership_id=? AND period_index=1", (mid,)).fetchone()
-            queue_welcome(con, cfg, a, due, decision_date)
+            pre = con.execute("SELECT * FROM payments WHERE status='prepaid' AND reference=? ORDER BY id LIMIT 1",
+                              (due["reference"],)).fetchone()
+            if pre and pre["amount_cents"] == due["amount_cents"]:
+                con.execute("UPDATE payments SET status='matched', due_id=?, review_reason=NULL WHERE id=?", (due["id"], pre["id"]))
+                con.execute("UPDATE dues SET status='paid', paid_at=?, payment_id=? WHERE id=?", (pre["booked_date"], pre["id"], due["id"]))
+                lang = a["lang"]
+                subj, body = i18n.email_welcome_paid(lang, a, P.fmt_date(decision_date, lang),
+                                                     period_text(due["period_start"], due["period_end"], lang))
+                queue_email(con, "welcome", a["email"], subj, body, app_id=a["id"])
+            else:
+                if pre:
+                    con.execute("UPDATE payments SET status='review', due_id=?, review_reason=? WHERE id=?",
+                                (due["id"], f"Uplata prije prijema ({P.fmt_eur(pre['amount_cents'])}) razlikuje se od članarine ({P.fmt_eur(due['amount_cents'])}).", pre["id"]))
+                queue_welcome(con, cfg, a, due, decision_date)
             done.append(a["public_no"])
         audit(con, actor, f"decision_{kind}", f"{decision_date} | {reference} | {', '.join(done)}")
         con.execute("COMMIT")
@@ -353,7 +424,7 @@ def import_statement(con, cfg, actor, file_bytes):
     missing = [k for k in ("date", "amount") if k not in idx]
     if missing:
         return {"error": "Nedostaju stupci: " + ", ".join(missing) + ". Prvi redak mora sadržavati nazive stupaca."}
-    res = {"matched": 0, "donations": 0, "review": 0, "duplicates": 0, "skipped": 0, "errors": []}
+    res = {"matched": 0, "donations": 0, "prepaid": 0, "review": 0, "duplicates": 0, "skipped": 0, "errors": []}
     for n, r in enumerate(rows[1:], start=2):
         if not any(c.strip() for c in r):
             continue
@@ -377,7 +448,17 @@ def import_statement(con, cfg, actor, file_bytes):
         if m:
             due = con.execute("SELECT * FROM dues WHERE reference=?", (m.group(0),)).fetchone()
             if not due:
-                reason = f"Poziv na broj {m.group(0)} ne odgovara nijednoj članarini."
+                y, q, idx = m.groups()
+                app_row = con.execute("SELECT * FROM applications WHERE year=? AND seq=? AND app_status='submitted'",
+                                      (int(y), int(q))).fetchone()
+                if app_row and idx == "1" and not prepayment(con, app_row):
+                    kind, status = "membership", "prepaid"
+                    reason = "Uplata prije odluke o prijemu – povezuje se automatski nakon prijema"
+                    ref = m.group(0)  # normalizirani poziv na broj za kasnije uparivanje
+                elif app_row:
+                    reason = "Uplata prije prijema za ovu prijavu već je evidentirana (moguća dvostruka evidencija)."
+                else:
+                    reason = f"Poziv na broj {m.group(0)} ne odgovara nijednoj članarini."
             elif due["status"] == "paid":
                 reason = "Članarina s ovim pozivom na broj već je plaćena (moguća dvostruka uplata)."
                 due_id = due["id"]
@@ -402,6 +483,8 @@ def import_statement(con, cfg, actor, file_bytes):
                 res["matched"] += 1
             elif kind == "donation":
                 res["donations"] += 1
+            elif status == "prepaid":
+                res["prepaid"] += 1
             else:
                 res["review"] += 1
             con.execute("COMMIT")

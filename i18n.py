@@ -7,6 +7,7 @@ T = {
   "nav_about": "O Academiji", "nav_areas": "Područja", "nav_membership": "Članstvo", "nav_people": "Stručnjaci", "nav_contact": "Kontakt",
   "cta_join": "Postanite član", "cta_support": "Podržite naš rad",
   "hero_eyebrow": "Academia de la Vida · akademija umijeća življenja",
+  "hero_fees": "Članarina 50 € godišnje · studenti i umirovljenici 20 €",
   "hero_h1_a": "Znanost, mudrost", "hero_h1_b": "i umijeće življenja.",
   "hero_lead": "Academia de la Vida otvorena je zajednica ljudi koje zanimaju zdravlje, znanje i kvalitetniji život. Stručnjaci vode sadržaj, a dobrodošli su svi koji žele učiti i sudjelovati.",
   "logo_alt": "Znak udruge Academia de la Vida: slova A i V, profil lica, maslinova grančica i val",
@@ -57,9 +58,9 @@ T = {
   "steps_h": "Kako teče učlanjenje",
   "steps": [
     "Ispunite pristupnicu.",
-    "E-mailom dobivate potvrdu da smo prijavu zaprimili.",
-    "O prijemu odlučuje Upravni odbor.",
-    "Nakon prijema šaljemo dobrodošlicu i podatke za uplatu članarine.",
+    "Odmah dobivate kod za uplatu članarine za svoju kategoriju.",
+    "Upravni odbor potvrđuje prijem u članstvo.",
+    "Dobivate dobrodošlicu, a članstvo traje 12 mjeseci od prijema.",
   ],
   "minors_h": "Prijavljujete maloljetnu osobu?",
   "minors_p": "Javite nam se e-mailom. Za osobu mlađu od 14 godina izjavu o učlanjenju daje zakonski zastupnik ili skrbnik, a za osobu od 14 do 18 godina potrebna je njegova pisana suglasnost.",
@@ -98,7 +99,9 @@ T = {
   "ok_p": "Hvala vam. Vaš broj prijave je {no}.",
   "ok_mail_sent": "Potvrdu smo poslali na {email}.",
   "ok_mail_later": "Potvrdu ćemo poslati na {email} čim to bude moguće.",
-  "ok_next": "O prijemu odlučuje Upravni odbor. Nakon prijema dobit ćete dobrodošlicu i podatke za uplatu članarine.",
+  "ok_next": "Članarinu možete uplatiti odmah, podaci su ispod. Prijem u članstvo potvrđuje Upravni odbor; ako prijava ne bude prihvaćena, uplatu vraćamo.",
+  "ok_pay_h": "Uplatite članarinu",
+  "ok_pay_page": "Svi podaci i kod za uplatu dostupni su i na ovoj poveznici:",
   "ok_no_oib": "Prije konačnog upisa javit ćemo vam se radi dopune podataka.",
 
   "people_h": "Stručnjaci koji vode Academiju",
@@ -116,7 +119,7 @@ T = {
   "support_p": "Academiju vode volonteri. Dobrovoljnom donacijom pomažete razvoj edukativnih sadržaja, aktivnosti i zajednice. Sredstva koristimo za ciljeve utvrđene Statutom.",
   "support_sep": "Donacija je odvojena od članarine.",
   "don_amount": "Iznos donacije (€)", "don_other": "Drugi iznos",
-  "don_show": "Prikaži podatke za uplatu",
+  "don_show": "Primijeni iznos",
   "don_err": "Upišite iznos između 1 i 10.000 €.",
 
   "pay_recipient": "Primatelj", "pay_iban": "IBAN", "pay_bic": "BIC/SWIFT", "pay_amount": "Iznos",
@@ -143,7 +146,8 @@ T = {
   "paypage_intro": "Podaci za uplatu članarine za {name}.",
   "paypage_paid": "Članarina za ovo razdoblje je plaćena. Hvala vam.",
   "paypage_none": "Trenutno nema otvorene članarine za uplatu.",
-  "paypage_pending": "Vaša prijava čeka odluku Upravnog odbora. Podatke za uplatu poslat ćemo nakon prijema.",
+  "paypage_pending": "Članarinu možete uplatiti odmah. Članstvo počinje odlukom Upravnog odbora o prijemu i traje 12 mjeseci; ako prijava ne bude prihvaćena, uplatu vraćamo.",
+  "paypage_prepaid": "Vaša uplata je zaprimljena. Nakon odluke Upravnog odbora o prijemu dobit ćete dobrodošlicu.",
   "paypage_not_proof": "Prikaz ili preuzimanje koda nije potvrda uplate. Potvrdu šaljemo nakon što uplata stigne na račun.",
   "back_home": "Natrag na početnu",
 
@@ -160,6 +164,7 @@ T = {
   "nav_about": "About", "nav_areas": "Areas", "nav_membership": "Membership", "nav_people": "Experts", "nav_contact": "Contact",
   "cta_join": "Become a member", "cta_support": "Support our work",
   "hero_eyebrow": "Academia de la Vida · Academy of the Art of Living",
+  "hero_fees": "Membership €50 per year · students and retirees €20",
   "hero_h1_a": "Science, wisdom", "hero_h1_b": "and the art of living.",
   "hero_lead": "Academia de la Vida is an open community of people interested in health, knowledge and a better quality of life. Experts lead the content, and everyone who wants to learn and take part is welcome.",
   "logo_alt": "Academia de la Vida emblem: the letters A and V, a face in profile, an olive branch and a wave",
@@ -210,9 +215,9 @@ T = {
   "steps_h": "How joining works",
   "steps": [
     "Fill in the application form.",
-    "You receive an email confirming that we have received your application.",
-    "The Management Board decides on admission.",
-    "After admission, we send a welcome message with the details for paying the membership fee.",
+    "You immediately receive a payment code for the membership fee in your category.",
+    "The Management Board confirms your admission.",
+    "You receive a welcome message; membership runs for 12 months from admission.",
   ],
   "minors_h": "Applying for someone under 18?",
   "minors_p": "Please contact us by email. For a person under 14, the membership statement is given by a legal representative or guardian; for a person aged 14 to 18, their written consent is required.",
@@ -251,7 +256,9 @@ T = {
   "ok_p": "Thank you. Your application number is {no}.",
   "ok_mail_sent": "We have sent a confirmation to {email}.",
   "ok_mail_later": "We will send a confirmation to {email} as soon as possible.",
-  "ok_next": "The Management Board decides on admission. After admission you will receive a welcome message with the details for paying the membership fee.",
+  "ok_next": "You can pay the membership fee right away; the details are below. The Management Board confirms admission; if your application is not accepted, we refund the payment.",
+  "ok_pay_h": "Pay the membership fee",
+  "ok_pay_page": "All payment details and the code are also available at this link:",
   "ok_no_oib": "Before final registration we will contact you to complete your details.",
 
   "people_h": "The experts who lead the Academia",
@@ -269,7 +276,7 @@ T = {
   "support_p": "The Academia is run by volunteers. A voluntary donation helps us develop educational content, activities and our community. Funds are used for the aims set out in the Statute.",
   "support_sep": "Donations are separate from the membership fee.",
   "don_amount": "Donation amount (€)", "don_other": "Other amount",
-  "don_show": "Show payment details",
+  "don_show": "Apply amount",
   "don_err": "Enter an amount between €1 and €10,000.",
 
   "pay_recipient": "Recipient", "pay_iban": "IBAN", "pay_bic": "BIC/SWIFT", "pay_amount": "Amount",
@@ -296,7 +303,8 @@ T = {
   "paypage_intro": "Payment details for the membership fee of {name}.",
   "paypage_paid": "The membership fee for this period has been paid. Thank you.",
   "paypage_none": "There is currently no open membership fee to pay.",
-  "paypage_pending": "Your application is awaiting the Management Board's decision. We will send the payment details after admission.",
+  "paypage_pending": "You can pay the membership fee right away. Membership starts with the Management Board's decision on admission and runs for 12 months; if your application is not accepted, we refund the payment.",
+  "paypage_prepaid": "Your payment has been received. After the Management Board's decision on admission you will receive a welcome message.",
   "paypage_not_proof": "Viewing or downloading the code is not a confirmation of payment. We send a confirmation once the payment reaches our account.",
   "back_home": "Back to the home page",
 
@@ -317,13 +325,17 @@ def _sig(lang):
             "\n\nKind regards,\nThe Management Board of Academia de la Vida\nacademiadelavidaudruga@gmail.com · academiadelavida.hr")
 
 
-def email_confirmation(lang, a, fee_txt, type_txt):
+def email_confirmation(lang, a, fee_txt, type_txt, pay_txt=None, link=None):
     if lang == "hr":
         s = "Zaprimili smo vašu pristupnicu – Academia de la Vida"
         b = (f"Dobar dan, {a['full_name']},\n\n"
              f"hvala vam na pristupnici. Zaprimili smo je pod brojem {a['public_no']}.\n\n"
-             f"Vrsta članstva: {type_txt}\nČlanarina: {fee_txt}\n\n"
-             "O prijemu odlučuje Upravni odbor. Nakon prijema poslat ćemo vam dobrodošlicu i podatke za uplatu članarine.")
+             f"Vrsta članstva: {type_txt}\nČlanarina: {fee_txt}\n")
+        if pay_txt:
+            b += ("\nČlanarinu možete uplatiti odmah:\n" + pay_txt +
+                  f"\n\nKod za plaćanje i podaci za kopiranje: {link}\nU privitku su obavijest o uplati (PDF) i slika koda.\n")
+        b += ("\nPrijem u članstvo potvrđuje Upravni odbor. Članstvo traje 12 mjeseci od prijema. "
+              "Ako prijava ne bude prihvaćena, uplatu vraćamo.")
         if a["no_oib"]:
             b += "\n\nNaveli ste da nemate hrvatski OIB. Prije konačnog upisa javit ćemo vam se radi dopune podataka."
         b += "\n\nAko ste neki podatak upisali pogrešno, odgovorite na ovu poruku."
@@ -331,11 +343,29 @@ def email_confirmation(lang, a, fee_txt, type_txt):
         s = "We have received your application – Academia de la Vida"
         b = (f"Dear {a['full_name']},\n\n"
              f"thank you for your application. We have received it under number {a['public_no']}.\n\n"
-             f"Type of membership: {type_txt}\nMembership fee: {fee_txt}\n\n"
-             "The Management Board decides on admission. After admission we will send you a welcome message with the details for paying the membership fee.")
+             f"Type of membership: {type_txt}\nMembership fee: {fee_txt}\n")
+        if pay_txt:
+            b += ("\nYou can pay the membership fee right away:\n" + pay_txt +
+                  f"\n\nPayment code and details to copy: {link}\nThe payment notice (PDF) and the code image are attached.\n")
+        b += ("\nThe Management Board confirms admission. Membership runs for 12 months from admission. "
+              "If your application is not accepted, we refund the payment.")
         if a["no_oib"]:
             b += "\n\nYou indicated that you do not have a Croatian OIB. Before final registration we will contact you to complete your details."
         b += "\n\nIf any of your details are wrong, simply reply to this message."
+    return s, b + _sig(lang)
+
+
+def email_welcome_paid(lang, a, admitted, period):
+    if lang == "hr":
+        s = "Dobrodošli u Academiju de la Vida"
+        b = (f"Dobar dan, {a['full_name']},\n\n"
+             f"s radošću vam javljamo da vas je Upravni odbor {admitted} primio u članstvo Academije de la Vida. Dobrodošli!\n\n"
+             f"Vaša uplata članarine je zaprimljena. Članstvo vrijedi za razdoblje {period}.")
+    else:
+        s = "Welcome to Academia de la Vida"
+        b = (f"Dear {a['full_name']},\n\n"
+             f"we are delighted to let you know that on {admitted} the Management Board admitted you as a member of Academia de la Vida. Welcome!\n\n"
+             f"Your membership fee payment has been received. Your membership is valid for the period {period}.")
     return s, b + _sig(lang)
 
 

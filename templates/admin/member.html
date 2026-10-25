@@ -34,7 +34,24 @@
 
 <div>
   <h2>Članarine</h2>
-  {% if not dues %}<p class="muted">Članarina se otvara nakon odluke o prijemu.</p>{% endif %}
+  {% if not dues and a.app_status == 'submitted' %}
+  <div class="box">
+    {% if pre %}
+      <p><span class="pill p-paid">Uplaćeno prije prijema</span> {{ fmt_eur(pre.amount_cents) }}, {{ pre.booked_date }}. Nakon odluke o prijemu automatski se povezuje s članarinom.</p>
+    {% else %}
+      <p>Članarina za uplatu odmah: <b>{{ fmt_eur(prepay.amount_cents) }}</b>, poziv na broj <b>HR00 {{ prepay.reference }}</b>.</p>
+      <form method="post" class="row">
+        <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="action" value="prepaid">
+        <div><label for="pam">Primljeni iznos (€)</label><input type="text" id="pam" name="amount" value="{{ '%d,%02d'|format(prepay.amount_cents // 100, prepay.amount_cents % 100) }}" required></div>
+        <div><label for="pbd">Datum uplate (prema banci)</label><input type="date" id="pbd" name="booked_date" max="{{ today }}" required></div>
+        <div><label for="pno">Napomena</label><input type="text" id="pno" name="note"></div>
+        <div><button class="btn gold" type="submit">Evidentiraj uplatu</button></div>
+      </form>
+      <p class="muted">Evidentirajte tek kad uplatu vidite na računu udruge.</p>
+    {% endif %}
+    <a class="btn sec sm" href="{{ url_for('pay_page', token=a.token) }}" target="_blank" rel="noopener">Stranica za uplatu</a>
+  </div>
+  {% elif not dues %}<p class="muted">Nema članarine.</p>{% endif %}
   {% for d in dues %}
   <div class="box">
     <dl class="kv">

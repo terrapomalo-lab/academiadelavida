@@ -11,8 +11,15 @@
   <p class="muted">Opći oblik: prvi redak s nazivima stupaca <code>datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije</code>. Stvarni izvoz vaše banke prilagodit ćemo kad dostavite primjer. Ista transakcija ne može se evidentirati dvaput; nejasne uplate idu na pregled ispod.</p>
 </form>
 {% if result %}
-<div class="flash ok">Uvoz završen: uparenih članarina {{ result.matched }}, donacija {{ result.donations }}, za pregled {{ result.review }}, već evidentiranih (preskočeno) {{ result.duplicates }}, isplata preskočeno {{ result.skipped }}.{% if result.errors %} Neispravni redci: {{ result.errors|join('; ') }}{% endif %}</div>
+<div class="flash ok">Uvoz završen: uparenih članarina {{ result.matched }}, uplata prije prijema {{ result.prepaid }}, donacija {{ result.donations }}, za pregled {{ result.review }}, već evidentiranih (preskočeno) {{ result.duplicates }}, isplata preskočeno {{ result.skipped }}.{% if result.errors %} Neispravni redci: {{ result.errors|join('; ') }}{% endif %}</div>
 {% endif %}
+
+<h2>Uplaćeno prije odluke o prijemu ({{ prepaid|length }})</h2>
+{% if not prepaid %}<p class="muted">Nema takvih uplata.</p>{% else %}
+<p class="muted">Ove uplate automatski se povezuju s članarinom kad Upravni odbor odobri prijem. Ako prijava bude odbijena, uplatu treba vratiti.</p>
+<div class="tbl"><table><thead><tr><th>Datum</th><th>Iznos</th><th>Platitelj</th><th>Poziv na broj</th><th>Izvor</th></tr></thead><tbody>
+{% for p in prepaid %}<tr><td>{{ p.booked_date }}</td><td class="num">{{ fmt_eur(p.amount_cents) }}</td><td>{{ p.payer or '' }}</td><td>{{ p.reference }}</td><td>{{ 'ručno' if p.source == 'manual' else 'izvod' }}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
 
 <h2>Za pregled ({{ review|length }})</h2>
 {% if not review %}<p class="muted">Nema nejasnih uplata.</p>{% else %}
@@ -45,7 +52,7 @@
   <tbody>{% for p in recent %}
   <tr><td>{{ p.booked_date }}</td><td class="num">{{ fmt_eur(p.amount_cents) }}</td><td>{{ p.payer or '' }}</td>
       <td>{{ {'membership':'članarina','donation':'donacija'}.get(p.kind, 'nepoznato') }}</td><td>{{ p.full_name or '' }}</td>
-      <td>{% if p.status == 'matched' %}<span class="pill p-paid">evidentirano</span>{% elif p.status == 'review' %}<span class="pill p-open">pregled</span>{% else %}<span class="pill p-mute">zanemareno</span>{% endif %}</td>
+      <td>{% if p.status == 'matched' %}<span class="pill p-paid">evidentirano</span>{% elif p.status == 'prepaid' %}<span class="pill p-info">prije prijema</span>{% elif p.status == 'review' %}<span class="pill p-open">pregled</span>{% else %}<span class="pill p-mute">zanemareno</span>{% endif %}</td>
       <td>{{ 'ručno' if p.source == 'manual' else 'izvod' }}</td></tr>
   {% endfor %}</tbody>
 </table></div>{% endif %}

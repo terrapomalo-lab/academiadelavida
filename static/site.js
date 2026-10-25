@@ -21,6 +21,32 @@
     } catch (e) {}
   }
 
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function renderPay(box, p, M) {
+    box.appendChild(el("h3", "pay-h", p.title));
+    var codes = el("div", "codes");
+    var c1 = el("div", "code"); c1.appendChild(el("h4", null, M.code_hr));
+    var i1 = el("img"); i1.src = p.hub3; i1.alt = "HUB3"; i1.width = 690; i1.height = 204; c1.appendChild(i1);
+    var dl = el("div", "dl");
+    var a1 = el("a", "btn btn-line btn-sm", M.dl_png); a1.href = p.hub3_dl; dl.appendChild(a1);
+    var a2 = el("a", "btn btn-line btn-sm", M.dl_pdf); a2.href = p.pdf; dl.appendChild(a2);
+    c1.appendChild(dl); codes.appendChild(c1);
+    var c2 = el("div", "code qr"); c2.appendChild(el("h4", null, M.code_eu));
+    var i2 = el("img"); i2.src = p.epc; i2.alt = "EPC QR"; i2.width = 300; i2.height = 300; c2.appendChild(i2);
+    codes.appendChild(c2); box.appendChild(codes);
+    var d = el("dl", "pay");
+    p.rows.forEach(function (r) {
+      var row = el("div"); row.appendChild(el("dt", null, r[0]));
+      var dd = el("dd", null, r[1]); row.appendChild(dd);
+      var b = el("button", "copy", M.copy); b.type = "button";
+      var val = r[2] || r[1];
+      b.addEventListener("click", function () { copyText(b, val, M.copied); });
+      row.appendChild(b); d.appendChild(row);
+    });
+    box.appendChild(d);
+    var pl = el("p", "note", p.page_label + " "); var lk = el("a", null, p.page); lk.href = p.page; pl.appendChild(lk); box.appendChild(pl);
+  }
   // ---------------------------------------------------------------- pristupnica
   var form = document.getElementById("apply");
   if (form) {
@@ -69,8 +95,10 @@
           if (res.status === 200 && res.j.ok) {
             ok.innerHTML = "";
             var h = document.createElement("h3"); h.textContent = res.j.title; ok.appendChild(h);
-            res.j.paragraphs.forEach(function (p) { var el = document.createElement("p"); el.textContent = p.replace(/<[^>]+>/g, ""); ok.appendChild(el); });
+            res.j.paragraphs.forEach(function (p) { var el = document.createElement("p"); el.textContent = p; ok.appendChild(el); });
+            if (res.j.pay) renderPay(ok, res.j.pay, M);
             form.hidden = true; ok.hidden = false; ok.focus();
+            ok.scrollIntoView({ block: "start" });
           } else {
             showErr(res.j.message || M.server);
           }
@@ -96,8 +124,15 @@
         show();
       });
     });
-    input.addEventListener("input", function () { chips.forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); });
+    var tmr;
+    input.addEventListener("input", function () {
+      chips.forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+      clearTimeout(tmr); tmr = setTimeout(function () { if (input.value) show(); }, 700);
+    });
     document.getElementById("don-show").addEventListener("click", show);
+    // kod za donaciju vidljiv odmah, s unaprijed odabranim iznosom
+    var pre = don.querySelector('.chip[data-amount="20"]');
+    if (pre) { pre.setAttribute("aria-pressed", "true"); input.value = "20"; }
     function fmt(v) {
       var s = v.toFixed(2);
       return lang === "hr" ? s.replace(".", ",") + " €" : "€" + s;
@@ -116,6 +151,7 @@
       document.getElementById("d-pdf").href = don.getAttribute("data-pdf") + q + "&lang=" + lang;
       box.hidden = false;
     }
+    show();
   }
 
   // ---------------------------------------------------------------- kopiranje

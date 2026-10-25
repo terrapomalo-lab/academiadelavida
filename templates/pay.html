@@ -4,23 +4,30 @@
 {% block main %}
 <div class="wrap"><div class="doc">
   <h1>{{ t.paypage_title }}</h1>
-  {% if a.app_status == 'submitted' %}
-    <p>{{ t.paypage_pending }}</p>
-  {% elif not due %}
-    <p>{{ t.paypage_none }}</p>
-  {% elif due.status == 'paid' %}
+  {% if st.state == 'prepaid' %}
+    <p>{{ t.paypage_prepaid }}</p>
+  {% elif st.state == 'paid' %}
     <p>{{ t.paypage_paid }}</p>
     <dl class="pay">
       <div><dt>{{ t.pay_member }}</dt><dd>{{ a.full_name }} · {{ a.public_no }}</dd></div>
-      <div><dt>{{ t.pay_period }}</dt><dd>{{ period }}</dd></div>
+      <div><dt>{{ t.pay_period }}</dt><dd>{{ st.period }}</dd></div>
     </dl>
-  {% elif due.status == 'open' %}
+  {% elif st.state in ('prepay', 'open') %}
+    {% set due = st.due %}{% set pay = st.pay %}
     <p>{{ t.paypage_intro|replace('{name}', a.full_name) }}</p>
+    {% if st.state == 'prepay' %}<p class="note">{{ t.paypage_pending }}</p>{% endif %}
     <div class="paybox">
+      <div class="codes">
+        <div class="code"><h4>{{ t.code_hr }}</h4>
+          <img src="{{ url_for('pay_hub3', token=a.token) }}" alt="HUB3" width="690" height="204">
+          <div class="dl"><a class="btn btn-line btn-sm" href="{{ url_for('pay_hub3', token=a.token, dl=1) }}">{{ t.dl_png }}</a>
+          <a class="btn btn-line btn-sm" href="{{ url_for('pay_pdf', token=a.token, lang=lang) }}">{{ t.dl_pdf }}</a></div></div>
+        <div class="code qr"><h4>{{ t.code_eu }}</h4><img src="{{ url_for('pay_epc', token=a.token) }}" alt="EPC QR" width="300" height="300"><p>{{ t.code_eu_note }}</p></div>
+      </div>
       <dl class="pay">
         <div><dt>{{ t.pay_member }}</dt><dd>{{ a.full_name }} · {{ a.public_no }}</dd></div>
-        <div><dt>{{ t.pay_period }}</dt><dd>{{ period }}</dd></div>
-        <div><dt>{{ t.pay_due }}</dt><dd>{{ fmt_date(due.due_date, lang) }}</dd></div>
+        <div><dt>{{ t.pay_period }}</dt><dd>{{ st.period }}</dd></div>
+        {% if st.due_text %}<div><dt>{{ t.pay_due }}</dt><dd>{{ st.due_text }}</dd></div>{% endif %}
         <div><dt>{{ t.pay_amount }}</dt><dd id="p-amount">{{ fmt_eur(due.amount_cents, lang) }}</dd><button class="copy" type="button" data-copy="p-amount-raw" data-copied="{{ t.copied }}">{{ t.copy_btn }}</button></div>
         <div><dt>{{ t.pay_recipient }}</dt><dd id="p-rec">{{ cfg.ORG_NAME }}, {{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }}</dd><button class="copy" type="button" data-copy="p-rec" data-copied="{{ t.copied }}">{{ t.copy_btn }}</button></div>
         <div><dt>{{ t.pay_iban }}</dt><dd id="p-iban">{{ cfg.ORG_IBAN }}</dd><button class="copy" type="button" data-copy="p-iban" data-copied="{{ t.copied }}">{{ t.copy_btn }}</button></div>
@@ -29,13 +36,6 @@
         <div><dt>{{ t.pay_desc }}</dt><dd id="p-desc">{{ pay.description }}</dd><button class="copy" type="button" data-copy="p-desc" data-copied="{{ t.copied }}">{{ t.copy_btn }}</button></div>
       </dl>
       <span id="p-amount-raw" hidden>{{ '%d,%02d'|format(due.amount_cents // 100, due.amount_cents % 100) if lang == 'hr' else '%d.%02d'|format(due.amount_cents // 100, due.amount_cents % 100) }}</span>
-      <div class="codes">
-        <div class="code"><h4>{{ t.code_hr }}</h4>
-          <img src="{{ url_for('pay_hub3', token=a.token) }}" alt="HUB3" width="690" height="204">
-          <div class="dl"><a class="btn btn-line btn-sm" href="{{ url_for('pay_hub3', token=a.token, dl=1) }}">{{ t.dl_png }}</a>
-          <a class="btn btn-line btn-sm" href="{{ url_for('pay_pdf', token=a.token, lang=lang) }}">{{ t.dl_pdf }}</a></div></div>
-        <div class="code qr"><h4>{{ t.code_eu }}</h4><img src="{{ url_for('pay_epc', token=a.token) }}" alt="EPC QR" width="300" height="300"><p>{{ t.code_eu_note }}</p></div>
-      </div>
       <div class="howto"><strong>{{ t.howto_h }}</strong><ul>{% for h in t.howto %}<li>{{ h }}</li>{% endfor %}</ul></div>
       <p class="note">{{ t.paypage_not_proof }}</p>
     </div>
