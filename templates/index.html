@@ -77,12 +77,11 @@
     <div class="member-info">
       <div class="sec-head"><h2>{{ t.member_h }}</h2><p>{{ t.member_p }}</p></div>
       <div class="fees">
-        <div class="fee"><span class="amt">{{ '50 €' if lang == 'hr' else '€50' }} <small>{{ t.per_year }}</small></span><span>{{ t.fee_std_label }}</span></div>
-        <div class="fee"><span class="amt">{{ '20 €' if lang == 'hr' else '€20' }} <small>{{ t.per_year }}</small></span><span>{{ t.fee_stu_label }}</span></div>
+        {% for amt, label, note in t.fees %}<div class="fee{{ ' fee-main' if loop.first }}"><span class="amt">{{ amt }} <small>{{ t.per_year }}</small></span><span class="fee-label">{{ label }}</span><span class="fee-note">{{ note }}</span></div>{% endfor %}
       </div>
       <div class="types">
-        <div><h3>{{ t.type_regular_h }}</h3><p>{{ t.type_regular_p }}</p></div>
         <div><h3>{{ t.type_assoc_h }}</h3><p>{{ t.type_assoc_p }}</p></div>
+        <div><h3>{{ t.type_regular_h }}</h3><p>{{ t.type_regular_p }}</p></div>
         <p class="note">{{ t.type_honor }}</p>
       </div>
       <div>
@@ -95,7 +94,7 @@
     <div id="pristupnica">
       <form class="apply" id="apply" method="post" action="{{ url_for('apply_nojs') }}" novalidate
             data-api="{{ url_for('api_apply') }}" data-lang="{{ lang }}"
-            data-msg='{{ {"err_prefix": t.err_prefix, "err_name": t.err_name, "err_email": t.err_email, "err_oib": t.err_oib, "err_country": t.err_country, "err_dob": t.err_dob, "err_minor": t.err_minor, "err_type": t.err_type, "err_fee": t.err_fee, "err_statute": t.err_statute, "err_adult": t.err_adult, "err_privacy": t.err_privacy, "sending": t.f_sending, "submit": t.f_submit, "server": t.err_server|replace("{email}", cfg.ORG_EMAIL), "code_hr": t.code_hr, "code_eu": t.code_eu, "dl_png": t.dl_png, "dl_pdf": t.dl_pdf, "copy": t.copy_btn, "copied": t.copied}|tojson|forceescape }}'>
+            data-msg='{{ {"err_prefix": t.err_prefix, "err_name": t.err_name, "err_email": t.err_email, "err_oib": t.err_oib, "err_country": t.err_country, "err_dob": t.err_dob, "err_minor": t.err_minor, "err_type": t.err_type, "err_fee": t.err_fee, "err_reduced": t.err_reduced, "err_statute": t.err_statute, "err_adult": t.err_adult, "err_privacy": t.err_privacy, "sending": t.f_sending, "submit": t.f_submit, "server": t.err_server|replace("{email}", cfg.ORG_EMAIL), "code_hr": t.code_hr, "code_eu": t.code_eu, "dl_png": t.dl_png, "dl_pdf": t.dl_pdf, "copy": t.copy_btn, "copied": t.copied}|tojson|forceescape }}'>
         <h3>{{ t.form_h }}</h3>
         <p class="hint">{{ t.form_intro }}</p>
         <input type="hidden" name="lang" value="{{ lang }}">
@@ -117,14 +116,10 @@
         </div>
 
         <fieldset>
-          <legend class="legend">{{ t.f_type }}</legend>
-          <label class="choice"><input type="radio" name="vrsta" id="v-red" value="regular" required> {{ t.f_type_regular }}</label>
-          <label class="choice"><input type="radio" name="vrsta" id="v-prid" value="associate"> {{ t.f_type_assoc }}</label>
-        </fieldset>
-        <fieldset>
-          <legend class="legend">{{ t.f_fee }}</legend>
-          <label class="choice"><input type="radio" name="clanarina" id="c-std" value="standard" required> {{ t.f_fee_std }}</label>
-          <label class="choice"><input type="radio" name="clanarina" id="c-stu" value="student"> {{ t.f_fee_stu }}</label>
+          <legend class="legend">{{ t.f_pkg }}</legend>
+          {% for val, label, price in t.f_pkg_opts %}
+          <label class="choice pkg"><input type="radio" name="paket" id="pk-{{ val }}" value="{{ val }}" required> <span><b>{{ label }}</b><br><span class="opt">{{ price }}</span></span></label>
+          {% endfor %}
         </fieldset>
 
         <div class="row2">
@@ -215,6 +210,11 @@
         <li><a href="{{ url_for('statute_pdf') }}" target="_blank" rel="noopener">{{ t.doc_statute }}</a></li>
         <li><a href="{{ privacy_url }}">{{ t.doc_privacy }}</a></li>
       </ul>
+      {% set socials = cfg.SOCIAL_LINKS|selectattr(1)|list %}
+      {% if socials %}
+      <div class="sec-head social-head"><h2>{{ t.social_h }}</h2></div>
+      <ul class="social">{% for name, url in socials %}<li><a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a></li>{% endfor %}</ul>
+      {% endif %}
     </div>
   </div>
 </section>

@@ -74,8 +74,7 @@
       else if (!oibValid(v("oib").replace(/\D/g, ""))) e.push("err_oib");
       var dob = v("dob");
       if (!dob) e.push("err_dob"); else if (age(dob) < 18) e.push("err_minor");
-      if (!form.querySelector("input[name=vrsta]:checked")) e.push("err_type");
-      if (!form.querySelector("input[name=clanarina]:checked")) e.push("err_fee");
+      if (!form.querySelector("input[name=paket]:checked")) e.push("err_fee");
       if (!document.getElementById("statut").checked) e.push("err_statute");
       if (!document.getElementById("punoljetnost").checked) e.push("err_adult");
       if (!document.getElementById("privatnost").checked) e.push("err_privacy");

@@ -44,8 +44,22 @@ class Config:
     ORG_BIC = _env("ADV_ORG_BIC", "ZABAHR2X")  # Zagrebačka banka (potvrđeno)
 
     # --- Članarina (prema odluci o članarini) ---
-    FEE_STANDARD_EUR = 50
+    # Odluka o članarini (nova): pridruženo 50 €, pridruženo – studenti i umirovljenici 20 €, redovito 150 €
+    FEE_REGULAR_EUR = 150
+    FEE_ASSOC_EUR = 50
+    FEE_REDUCED_EUR = 20          # samo uz pridruženo članstvo
+    # Prijave zaprimljene prije ovog datuma plaćaju po prethodnoj odluci (50 € / 20 €, neovisno o vrsti članstva)
+    FEES_V2_FROM = _env("ADV_FEES_V2_FROM", "2026-10-25")
+    FEE_STANDARD_EUR = 50         # prethodna odluka od 22. 10. 2026.
     FEE_STUDENT_EUR = 20
+
+    # Društvene mreže: upisati punu adresu profila; prazno = ne prikazuje se
+    SOCIAL_LINKS = [
+        ("YouTube", _env("ADV_SOCIAL_YOUTUBE", "")),
+        ("Facebook", _env("ADV_SOCIAL_FACEBOOK", "")),
+        ("Instagram", _env("ADV_SOCIAL_INSTAGRAM", "")),
+        ("LinkedIn", _env("ADV_SOCIAL_LINKEDIN", "")),
+    ]
     PERIOD_MONTHS = 12
     # Rok za uplatu članarine: 15 dana (potvrđeno)
     PAYMENT_DUE_DAYS = int(_env("ADV_PAYMENT_DUE_DAYS", "15"))

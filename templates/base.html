@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#F9F4F0">
 <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
 <link rel="preload" href="{{ url_for('static', filename='fonts/bodoni-moda-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=3">
+<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=4">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -33,8 +33,9 @@
     <span class="fname">ACADEMIA DE LA VIDA</span>
     <span class="meta">{{ t.footer_desc }} · {{ cfg.ORG_STREET }}, {{ cfg.ORG_POSTCODE_CITY }} · OIB {{ cfg.ORG_OIB }}</span>
     <span class="meta"><a href="{{ url_for('statute_pdf') }}">{{ 'Statut' if lang == 'hr' else 'Statute' }}</a> · <a href="{{ url_for('privacy_hr') if lang == 'hr' else url_for('privacy_en') }}">{{ t.doc_privacy }}</a> · {{ cfg.ORG_EMAIL }}</span>
+    {% set socials = cfg.SOCIAL_LINKS|selectattr(1)|list %}{% if socials %}<span class="meta">{% for name, url in socials %}<a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a>{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}
   </div>
 </footer>
-<script src="{{ url_for('static', filename='site.js') }}?v=2" defer></script>
+<script src="{{ url_for('static', filename='site.js') }}?v=4" defer></script>
 </body>
 </html>

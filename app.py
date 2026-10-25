@@ -526,7 +526,7 @@ def create_app(overrides=None):
             mid = con.execute("SELECT last_insert_rowid()").fetchone()[0]
             s_, e_ = S.period_for(pstart)
             con.execute("""INSERT INTO dues(membership_id, period_index, period_start, period_end, amount_cents, reference, due_date, created_at)
-                           VALUES (?,?,?,?,?,?,?,?)""", (mid, 1, s_.isoformat(), e_.isoformat(), S.fee_cents(cfg, d["fee_cat"]),
+                           VALUES (?,?,?,?,?,?,?,?)""", (mid, 1, s_.isoformat(), e_.isoformat(), S.fee_cents(cfg, a),
                                                        P.membership_reference(a, 1), (date.today() + timedelta(days=cfg["PAYMENT_DUE_DAYS"])).isoformat(), DB.now_iso()))
             DB.audit(con, g.admin, "manual_member", a["public_no"])
             con.execute("COMMIT")

@@ -53,8 +53,27 @@ def age_on(dob, today):
     return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
 
-def fee_cents(cfg, fee_cat):
-    return (cfg["FEE_STUDENT_EUR"] if fee_cat == "student" else cfg["FEE_STANDARD_EUR"]) * 100
+def fee_cents(cfg, a, current=False):
+    """Članarina u centima za prijavu/člana. Prijave prije FEES_V2_FROM plaćaju po prethodnoj odluci
+    (osim kod obnove, current=True, kada vrijedi važeća odluka)."""
+    legacy = (not current) and cfg.get("FEES_V2_FROM") and str(a["created_at"])[:10] < cfg["FEES_V2_FROM"]
+    if legacy:
+        return (cfg["FEE_STUDENT_EUR"] if a["fee_cat"] == "student" else cfg["FEE_STANDARD_EUR"]) * 100
+    if a["member_type"] == "regular":
+        return cfg["FEE_REGULAR_EUR"] * 100
+    return (cfg["FEE_REDUCED_EUR"] if a["fee_cat"] == "student" else cfg["FEE_ASSOC_EUR"]) * 100
+
+
+def fee_text(cfg, a, lang, current=False):
+    cents = fee_cents(cfg, a, current)
+    if cents % 100 == 0:
+        eur = f"{cents // 100} €" if lang == "hr" else f"€{cents // 100}"
+    else:
+        eur = P.fmt_eur(cents, lang)
+    return f"{eur} godišnje" if lang == "hr" else f"{eur} per year"
+
+
+PACKAGES = {"assoc": ("associate", "standard"), "assoc_reduced": ("associate", "student"), "regular": ("regular", "standard")}
 
 
 def labels(lang):
@@ -86,6 +105,7 @@ def validate_application(form, lang, today=None):
         "dob": g("dob"),
         "member_type": g("vrsta"),
         "fee_cat": g("clanarina"),
+        "_paket": g("paket"),
         "interests": g("podrucje")[:300] or None,
         "lang": g("jezik") if g("jezik") in ("hr", "en") else lang,
         "newsletter": 1 if form.get("novosti") in ("1", "on", "true") else 0,
@@ -110,10 +130,19 @@ def validate_application(form, lang, today=None):
             errs.append("err_minor")
     except ValueError:
         errs.append("err_dob")
-    if d["member_type"] not in ("regular", "associate"):
-        errs.append("err_type")
-    if d["fee_cat"] not in ("standard", "student"):
-        errs.append("err_fee")
+    paket = d.pop("_paket")
+    if paket:
+        if paket in PACKAGES:
+            d["member_type"], d["fee_cat"] = PACKAGES[paket]
+        else:
+            errs.append("err_fee")
+    else:
+        if d["member_type"] not in ("regular", "associate"):
+            errs.append("err_type")
+        if d["fee_cat"] not in ("standard", "student"):
+            errs.append("err_fee")
+        elif d["member_type"] == "regular" and d["fee_cat"] == "student":
+            errs.append("err_reduced")
     if not form.get("statut"):
         errs.append("err_statute")
     if not form.get("punoljetnost"):
@@ -170,7 +199,7 @@ def rate_limited(con, ip, limit):
 def prepay_due(cfg, a):
     """Podaci za uplatu prve članarine odmah nakon prijave, prije odluke o prijemu.
     Poziv na broj jednak je onome koji dobiva prva članarina nakon prijema, pa se uplata kasnije sama poveže."""
-    return {"amount_cents": fee_cents(cfg, a["fee_cat"]), "reference": P.membership_reference(a, 1),
+    return {"amount_cents": fee_cents(cfg, a), "reference": P.membership_reference(a, 1),
             "period_start": None, "period_end": None, "due_date": None, "status": "open"}
 
 
@@ -233,7 +262,8 @@ def queue_confirmation(con, a, cfg=None):
         pay_txt = pay_lines(cfg, a, due, a["lang"])
         link = f"{cfg['BASE_URL']}/p/{a['token']}"
         att = [{"kind": "app_notice_pdf", "app_id": a["id"]}, {"kind": "app_hub3_png", "app_id": a["id"]}]
-    s, b = i18n.email_confirmation(a["lang"], a, lab[a["fee_cat"]], lab[a["member_type"]], pay_txt, link)
+    fee_txt = fee_text(cfg, a, a["lang"]) if cfg is not None else lab[a["fee_cat"]]
+    s, b = i18n.email_confirmation(a["lang"], a, fee_txt, lab[a["member_type"]], pay_txt, link)
     return queue_email(con, "confirmation", a["email"], s, b, att, app_id=a["id"])
 
 
@@ -280,7 +310,7 @@ def record_decision(con, cfg, actor, kind, decision_date, reference, app_ids, no
             ref = P.membership_reference(a, 1)
             con.execute("""INSERT INTO dues(membership_id, period_index, period_start, period_end, amount_cents, reference,
                            due_date, created_at) VALUES (?,?,?,?,?,?,?,?)""",
-                        (mid, 1, start.isoformat(), end.isoformat(), fee_cents(cfg, a["fee_cat"]), ref,
+                        (mid, 1, start.isoformat(), end.isoformat(), fee_cents(cfg, a), ref,
                          due_date.isoformat(), now_iso()))
             due = con.execute("SELECT * FROM dues WHERE membership_id=? AND period_index=1", (mid,)).fetchone()
             pre = con.execute("SELECT * FROM payments WHERE status='prepaid' AND reference=? ORDER BY id LIMIT 1",
@@ -547,7 +577,7 @@ def run_renewals(con, cfg, today=None):
         try:
             con.execute("""INSERT INTO dues(membership_id, period_index, period_start, period_end, amount_cents, reference,
                            due_date, created_at, reminder_sent_at) VALUES (?,?,?,?,?,?,?,?,?)""",
-                        (d["membership_id"], idx, s.isoformat(), e.isoformat(), fee_cents(cfg, a["fee_cat"]),
+                        (d["membership_id"], idx, s.isoformat(), e.isoformat(), fee_cents(cfg, a, current=True),
                          P.membership_reference(a, idx), max(s, today + timedelta(days=cfg["PAYMENT_DUE_DAYS"])).isoformat(),
                          now_iso(), now_iso()))
             due = con.execute("SELECT * FROM dues WHERE membership_id=? AND period_index=?", (d["membership_id"], idx)).fetchone()

@@ -41,7 +41,7 @@ def env(tmp_path):
 
 def form(**kw):
     f = {"lang": "hr", "ime": "Ana Horvat", "email": "ana@example.com", "tel": "", "oib": VALID_OIB, "dob": ADULT_DOB,
-         "vrsta": "regular", "clanarina": "standard", "jezik": "hr", "statut": "1", "punoljetnost": "1", "privatnost": "1"}
+         "paket": "assoc", "jezik": "hr", "statut": "1", "punoljetnost": "1", "privatnost": "1"}
     f.update(kw)
     return {k: v for k, v in f.items() if v is not None}
 
@@ -125,7 +125,7 @@ def test_application_without_oib_en(env):
     r = c.post("/api/prijava", data=form(lang="en", jezik="en", oib="", bez_oib="1"))
     assert r.status_code == 400 and "err_country" in r.json["errors"]
     r = c.post("/api/prijava", data=form(lang="en", jezik="en", oib="", bez_oib="1", drzava="Slovenia", ime="Janez Novak",
-                                          email="janez@example.si", clanarina="student", vrsta="associate"))
+                                          email="janez@example.si", paket="assoc_reduced"))
     assert r.json["ok"]
     a = con.execute("SELECT * FROM applications WHERE email='janez@example.si'").fetchone()
     assert a["oib"] is None and a["no_oib"] == 1 and a["needs_completion"] == 1 and a["lang"] == "en"
@@ -195,10 +195,10 @@ def test_decision_requires_confirmation(env):
     assert con.execute("SELECT app_status FROM applications").fetchone()[0] == "submitted"
 
 
-@pytest.mark.parametrize("fee,cents", [("standard", 5000), ("student", 2000)])
+@pytest.mark.parametrize("fee,cents", [("assoc", 5000), ("assoc_reduced", 2000), ("regular", 15000)])
 def test_admission_notice_and_codes(env, fee, cents):
     app, c, con = env
-    tok, aid = full_admission(app, c, con, clanarina=fee, ime="Ivana Šimić-Đurić")
+    tok, aid = full_admission(app, c, con, paket=fee, ime="Ivana Šimić-Đurić")
     a = con.execute("SELECT * FROM applications WHERE id=?", (aid,)).fetchone()
     d = con.execute("SELECT d.* FROM dues d JOIN memberships m ON m.id=d.membership_id WHERE m.application_id=?", (aid,)).fetchone()
     assert a["app_status"] == "approved" and d["amount_cents"] == cents and d["status"] == "open"
@@ -382,12 +382,12 @@ def test_donation_code_visible_without_click(env):
     assert text.split("\n")[2] == "000000000002000"
 
 
-@pytest.mark.parametrize("fee,cents", [("standard", 5000), ("student", 2000)])
+@pytest.mark.parametrize("fee,cents", [("assoc", 5000), ("assoc_reduced", 2000), ("regular", 15000)])
 def test_immediate_payment_after_application(env, fee, cents):
     app, c, con = env
-    r = c.post("/api/prijava", data=form(clanarina=fee))
+    r = c.post("/api/prijava", data=form(paket=fee))
     pay = r.json["pay"]
-    assert pay["rows"][0][2] == ("50,00" if cents == 5000 else "20,00")
+    assert pay["rows"][0][2] == f"{cents // 100},00"
     a = con.execute("SELECT * FROM applications").fetchone()
     ref = f"{a['year']}-{a['seq']:04d}-1"
     assert pay["rows"][3][1] == "HR00 " + ref
@@ -439,9 +439,34 @@ def test_manual_prepayment_and_rejection_warning(env):
 
 def test_prepayment_wrong_amount_goes_to_review_on_admission(env):
     app, c, con = env
-    c.post("/api/prijava", data=form(clanarina="student"))
+    c.post("/api/prijava", data=form(paket="assoc_reduced"))
     a = con.execute("SELECT * FROM applications").fetchone()
     S.record_prepayment(con, app.config, "tajnik", a, date.today().isoformat(), 5000)
     S.record_decision(con, app.config, "tajnik", "admit", date.today().isoformat(), "Z", [a["id"]])
     assert con.execute("SELECT status FROM dues").fetchone()[0] == "open"
     assert con.execute("SELECT status FROM payments").fetchone()[0] == "review"
+
+
+def test_fee_packages_and_legacy_price(env):
+    app, c, con = env
+    r = c.post("/api/prijava", data=form(paket="nepostojece"))
+    assert r.status_code == 400 and "err_fee" in r.json["errors"]
+    import services as S2
+    d, errs = S2.validate_application({**form(), "paket": "", "vrsta": "regular", "clanarina": "student"}, "hr")
+    assert "err_reduced" in errs
+    # prijava prije nove odluke plaća po prethodnoj cijeni
+    app.config["FEES_V2_FROM"] = "2026-10-25"
+    old = {"created_at": "2026-10-23T10:00:00+02:00", "member_type": "regular", "fee_cat": "standard"}
+    new = {"created_at": "2026-10-26T10:00:00+01:00", "member_type": "regular", "fee_cat": "standard"}
+    assert S2.fee_cents(app.config, old) == 5000 and S2.fee_cents(app.config, new) == 15000
+    assert S2.fee_cents(app.config, old, current=True) == 15000   # obnova po važećoj odluci
+    html = c.get("/").get_data(as_text=True)
+    assert "150 €" in html and "Pridruženo članstvo – studenti i umirovljenici" in html
+
+
+def test_social_links_hidden_until_set(env):
+    app, c, _ = env
+    assert "Pratite nas" not in c.get("/").get_data(as_text=True)
+    app.config["SOCIAL_LINKS"] = [("YouTube", "https://www.youtube.com/@primjer"), ("Facebook", "")]
+    html = c.get("/").get_data(as_text=True)
+    assert "Pratite nas" in html and "https://www.youtube.com/@primjer" in html and ">Facebook<" not in html

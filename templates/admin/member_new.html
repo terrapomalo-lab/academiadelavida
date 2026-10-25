@@ -18,7 +18,7 @@
   <label class="chk"><input type="checkbox" name="bez_oib" value="1" {{ 'checked' if f.bez_oib }}> Nema hrvatski OIB</label>
   <div class="row">
     <div><label for="vrsta">Vrsta članstva</label><select id="vrsta" name="vrsta"><option value="regular">redovito</option><option value="associate" {{ 'selected' if f.vrsta == 'associate' }}>pridruženo</option></select></div>
-    <div><label for="clanarina">Članarina</label><select id="clanarina" name="clanarina"><option value="standard">standardna (50 €)</option><option value="student" {{ 'selected' if f.clanarina == 'student' }}>snižena – studenti i umirovljenici (20 €)</option></select></div>
+    <div><label for="clanarina">Članarina</label><select id="clanarina" name="clanarina"><option value="standard">standardna (pridruženo 50 € / redovito 150 €)</option><option value="student" {{ 'selected' if f.clanarina == 'student' }}>snižena – studenti i umirovljenici, samo pridruženo (20 €)</option></select></div>
     <div><label for="jezik">Jezik poruka</label><select id="jezik" name="jezik"><option value="hr">hrvatski</option><option value="en" {{ 'selected' if f.jezik == 'en' }}>engleski</option></select></div>
   </div>
   <div class="row">
