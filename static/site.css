@@ -97,7 +97,9 @@ section.cream{background:var(--cream)}
 .frame{aspect-ratio:4/5;width:100%;overflow:hidden;background:var(--sand);border:1px solid var(--line)}
 .frame img{width:100%;height:100%;object-fit:cover}
 .letter .frame{max-width:300px}
-.quote{font-family:var(--serif);font-size:clamp(1.35rem,3.2vw,1.7rem);line-height:1.45;max-width:38rem;display:grid;gap:1rem}
+.quote{font-family:var(--sans);font-size:1.06rem;line-height:1.7;color:#2C3B4F;max-width:36rem;display:grid;gap:1rem}
+.quote .lead-q{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.35rem,3vw,1.6rem);line-height:1.38;color:var(--navy)}
+.letter-label{font-size:.9rem;font-weight:600;color:var(--olive)}
 .sign{font-family:var(--sans);font-size:1rem;color:var(--muted);line-height:1.5}
 .sign strong{color:var(--navy);font-weight:600}
 @media (min-width:760px){.letter{grid-template-columns:300px 1fr;gap:3.5rem}}

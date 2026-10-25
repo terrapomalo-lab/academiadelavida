@@ -47,8 +47,8 @@
   <div class="wrap letter">
     <div class="frame"><img src="{{ url_for('static', filename='img/vida.webp') }}" width="640" height="800" alt="{{ t.letter_photo_alt }}" loading="lazy"></div>
     <div class="quote">
-      <p class="eyebrow">{{ t.letter_h }}</p>
-      {% for p in t.letter_p %}<p>{{ p }}</p>{% endfor %}
+      <p class="letter-label">{{ t.letter_h }}</p>
+      {% for p in t.letter_p %}<p{% if loop.first %} class="lead-q"{% endif %}>{{ p }}</p>{% endfor %}
       <p class="sign"><strong>{{ t.letter_sign_name }}</strong><br>{{ t.letter_sign_role }}</p>
     </div>
   </div>

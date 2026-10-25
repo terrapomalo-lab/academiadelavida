@@ -4,7 +4,7 @@ T = {
 "hr": {
   "lang_name": "Hrvatski", "other_lang": "en", "other_lang_label": "English", "html_lang": "hr",
   "meta_desc": "Academia de la Vida otvorena je zajednica ljudi koje zanimaju zdravlje, znanje i kvalitetniji život. Postanite član.",
-  "nav_about": "O Academiji", "nav_areas": "Područja", "nav_membership": "Članstvo", "nav_people": "Stručnjaci", "nav_contact": "Kontakt",
+  "nav_about": "O Akademiji", "nav_areas": "Područja", "nav_membership": "Članstvo", "nav_people": "Stručnjaci", "nav_contact": "Kontakt",
   "cta_join": "Postanite član", "cta_support": "Podržite naš rad",
   "hero_eyebrow": "Academia de la Vida · akademija umijeća življenja",
   "hero_fees": "Članarina 50 € godišnje · studenti i umirovljenici 20 €",
@@ -12,8 +12,8 @@ T = {
   "hero_lead": "Academia de la Vida otvorena je zajednica ljudi koje zanimaju zdravlje, znanje i kvalitetniji život. Stručnjaci vode sadržaj, a dobrodošli su svi koji žele učiti i sudjelovati.",
   "logo_alt": "Znak udruge Academia de la Vida: slova A i V, profil lica, maslinova grančica i val",
 
-  "about_h": "O Academiji",
-  "about_p": "Academia de la Vida neprofitna je i interdisciplinarna udruga sa sjedištem u Zagrebu. Povezujemo znanstvene spoznaje, iskustvo i kulturu radi zdravlja i kvalitetnijeg života.",
+  "about_h": "O Akademiji",
+  "about_p": "Academia de la Vida – akademija umijeća življenja neprofitna je i interdisciplinarna udruga sa sjedištem u Zagrebu. Povezujemo znanstvene spoznaje, iskustvo i kulturu radi zdravlja i kvalitetnijeg života. Naziv Academia de la Vida nadahnut je akademkinjom Vidom Demarin.",
   "about_items": [
     ("Znanje za svakodnevni život", "Spoznaje iz znanosti o prehrani, neuroznanosti i javnog zdravstva prenosimo jasno i razumljivo, tako da ih je lako primijeniti u svakodnevici."),
     ("Učenje u zajednici", "Predavanja, radionice i susreti povezuju stručnjake i sve koje zanima kako živjeti zdravije i kvalitetnije."),
@@ -22,23 +22,23 @@ T = {
 
   "letter_h": "Osobni poziv",
   "letter_p": [
-    "Academiju de la Vida osnovali smo kako bi znanje o zdravlju i kvaliteti života bilo dostupno svima, a ne samo stručnjacima.",
+    "Akademiju smo osnovali kako bi znanje o zdravlju i kvaliteti života bilo dostupno svima, a ne samo stručnjacima.",
     "Vjerujem da znanje najviše vrijedi kad ga dijelimo. Zato vas pozivam da nam se pridružite i s nama gradite zajednicu u kojoj se susreću znanost, iskustvo i kultura.",
   ],
-  "letter_sign_name": "Akademkinja Vida Demarin", "letter_sign_role": "predsjednica Academije de la Vida",
+  "letter_sign_name": "Akademkinja Vida Demarin", "letter_sign_role": "predsjednica udruge Academia de la Vida",
   "letter_photo_alt": "Akademkinja Vida Demarin",
 
   "benefits_h": "Što članstvo donosi",
   "benefits_p": "Članovima pripremamo sadržaje koji znanost približavaju svakodnevnom životu.",
   "benefits": [
     ("Online predavanja", "Povremena predavanja stručnjaka koja možete pratiti od kuće."),
-    ("Newsletter", "Novosti o radu Academije, programima i događanjima, za sve koji se prijave."),
+    ("Newsletter", "Novosti o radu Akademije, programima i događanjima, za sve koji se prijave."),
     ("Edukativni sadržaji", "Članci i edukativni materijali o zdravlju, prehrani i kvaliteti života."),
-    ("Zajednica", "Povezanost s ljudima sličnih interesa i mogućnost aktivnog sudjelovanja u radu Academije."),
+    ("Zajednica", "Povezanost s ljudima sličnih interesa i mogućnost aktivnog sudjelovanja u radu Akademije."),
   ],
 
   "areas_h": "Područja djelovanja",
-  "areas_p": "Rad Academije organiziran je u četiri cjeline.",
+  "areas_p": "Rad Akademije organiziran je u četiri cjeline.",
   "areas": [
     ("Znanost i istraživanje", "Potičemo i provodimo istraživanja o prehrani, zdravlju mozga, povezanosti živčanog, hormonskog i imunološkog sustava (PNEI), javnom zdravlju te integrativnoj i lifestyle medicini. Povezujemo istraživače u Hrvatskoj i inozemstvu."),
     ("Obrazovanje", "Organiziramo predavanja, radionice, seminare i stručne skupove za stručnjake i širu javnost. Posebno nas zanimaju mentalno zdravlje, upravljanje stresom, zdravo starenje i cjeloživotno učenje."),
@@ -47,14 +47,14 @@ T = {
   ],
 
   "member_h": "Postanite član",
-  "member_p": "Članom može postati svatko tko prihvaća Statut i ciljeve Academije. Članarina vrijedi dvanaest mjeseci od prijema.",
+  "member_p": "Članom može postati svatko tko prihvaća Statut i ciljeve Akademije. Članarina vrijedi dvanaest mjeseci od prijema.",
   "per_year": "godišnje",
   "fee_std_label": "Redoviti i pridruženi članovi", "fee_stu_label": "Studenti i umirovljenici",
   "type_regular_h": "Redovito članstvo",
   "type_regular_p": "Za one koji žele aktivno sudjelovati. Redoviti članovi čine Skupštinu, odlučuju o radu udruge te mogu birati i biti birani u njezina tijela.",
   "type_assoc_h": "Pridruženo članstvo",
   "type_assoc_p": "Za one koji žele povremeno sudjelovati u aktivnostima, bez prava odlučivanja u tijelima udruge.",
-  "type_honor": "Počasno članstvo dodjeljuje Skupština osobama osobito zaslužnim za rad Academije.",
+  "type_honor": "Počasno članstvo dodjeljuje Skupština osobama osobito zaslužnim za rad Akademije.",
   "steps_h": "Kako teče učlanjenje",
   "steps": [
     "Ispunite pristupnicu.",
@@ -79,7 +79,7 @@ T = {
   "f_statute": "Prihvaćam {statut} i ciljeve udruge Academia de la Vida.", "f_statute_link": "Statut",
   "f_adult": "Imam navršenih 18 godina.",
   "f_privacy": "Pročitao/la sam {obavijest}.", "f_privacy_link": "obavijest o privatnosti",
-  "f_news": "Želim primati newsletter Academije.", "f_news_note": "Neobavezno. Odjava je moguća u svakom trenutku.",
+  "f_news": "Želim primati newsletter Akademije.", "f_news_note": "Neobavezno. Odjava je moguća u svakom trenutku.",
   "f_submit": "Pošalji pristupnicu", "f_sending": "Šaljem…",
   "err_prefix": "Prije slanja provjerite:",
   "err_name": "upišite ime i prezime",
@@ -104,8 +104,8 @@ T = {
   "ok_pay_page": "Svi podaci i kod za uplatu dostupni su i na ovoj poveznici:",
   "ok_no_oib": "Prije konačnog upisa javit ćemo vam se radi dopune podataka.",
 
-  "people_h": "Stručnjaci koji vode Academiju",
-  "people_p": "Upravni odbor Academije de la Vida.",
+  "people_h": "Stručnjaci koji vode Akademiju",
+  "people_p": "Upravni odbor udruge Academia de la Vida.",
   "people": [
     ("vida", "Akademkinja Vida Demarin", "Predsjednica",
      "Specijalistica neuropsihijatrije i redovita članica Hrvatske akademije znanosti i umjetnosti. Jedna je od pionirki ultrazvučne dijagnostike moždane cirkulacije u Hrvatskoj te osnivačica Hrvatskog društva za prevenciju moždanog udara. Svoj znanstveni, klinički i edukativni rad posvećuje zdravlju mozga, prevenciji i kvaliteti života te prenošenju znanja novim generacijama."),
@@ -116,7 +116,7 @@ T = {
   ],
 
   "support_h": "Podržite naš rad",
-  "support_p": "Academiju vode volonteri. Dobrovoljnom donacijom pomažete razvoj edukativnih sadržaja, aktivnosti i zajednice. Sredstva koristimo za ciljeve utvrđene Statutom.",
+  "support_p": "Akademiju vode volonteri. Dobrovoljnom donacijom pomažete razvoj edukativnih sadržaja, aktivnosti i zajednice. Sredstva koristimo za ciljeve utvrđene Statutom.",
   "support_sep": "Donacija je odvojena od članarine.",
   "don_amount": "Iznos donacije (€)", "don_other": "Drugi iznos",
   "don_show": "Primijeni iznos",
@@ -152,7 +152,7 @@ T = {
   "back_home": "Natrag na početnu",
 
   "unsub_title": "Odjava s newslettera",
-  "unsub_done": "Odjavljeni ste s newslettera Academije de la Vida. Poruke vezane uz članstvo i dalje ćete primati ako ste član.",
+  "unsub_done": "Odjavljeni ste s newslettera udruge Academia de la Vida. Poruke vezane uz članstvo i dalje ćete primati ako ste član.",
   "unsub_confirm": "Želite li se odjaviti s newslettera?", "unsub_btn": "Odjavi me",
   "unsub_bad": "Poveznica za odjavu nije ispravna.",
   "privacy_title": "Obavijest o privatnosti",
@@ -170,7 +170,7 @@ T = {
   "logo_alt": "Academia de la Vida emblem: the letters A and V, a face in profile, an olive branch and a wave",
 
   "about_h": "About the Academia",
-  "about_p": "Academia de la Vida is a non-profit, interdisciplinary association based in Zagreb, Croatia. We bring together scientific knowledge, experience and culture for health and a better quality of life.",
+  "about_p": "Academia de la Vida – Academy of the Art of Living is a non-profit, interdisciplinary association based in Zagreb, Croatia. We bring together scientific knowledge, experience and culture for health and a better quality of life. The name Academia de la Vida is inspired by Academician Vida Demarin.",
   "about_items": [
     ("Knowledge for everyday life", "We share findings from nutrition science, neuroscience and public health clearly and simply, so they are easy to apply in daily life."),
     ("Learning together", "Lectures, workshops and meetings bring together experts and everyone interested in living a healthier, fuller life."),
@@ -320,7 +320,7 @@ T = {
 # ------------------------------------------------------------------ e-poruke
 
 def _sig(lang):
-    return ("\n\nSrdačan pozdrav,\nUpravni odbor Academije de la Vida\nacademiadelavidaudruga@gmail.com · academiadelavida.hr"
+    return ("\n\nSrdačan pozdrav,\nUpravni odbor udruge Academia de la Vida\nacademiadelavidaudruga@gmail.com · academiadelavida.hr"
             if lang == "hr" else
             "\n\nKind regards,\nThe Management Board of Academia de la Vida\nacademiadelavidaudruga@gmail.com · academiadelavida.hr")
 
@@ -357,9 +357,9 @@ def email_confirmation(lang, a, fee_txt, type_txt, pay_txt=None, link=None):
 
 def email_welcome_paid(lang, a, admitted, period):
     if lang == "hr":
-        s = "Dobrodošli u Academiju de la Vida"
+        s = "Dobrodošli u Akademiju – Academia de la Vida"
         b = (f"Dobar dan, {a['full_name']},\n\n"
-             f"s radošću vam javljamo da vas je Upravni odbor {admitted} primio u članstvo Academije de la Vida. Dobrodošli!\n\n"
+             f"s radošću vam javljamo da vas je Upravni odbor {admitted} primio u članstvo udruge Academia de la Vida. Dobrodošli!\n\n"
              f"Vaša uplata članarine je zaprimljena. Članstvo vrijedi za razdoblje {period}.")
     else:
         s = "Welcome to Academia de la Vida"
@@ -371,9 +371,9 @@ def email_welcome_paid(lang, a, admitted, period):
 
 def email_welcome(lang, a, d, admitted, pay_lines, link, decision_ref):
     if lang == "hr":
-        s = "Dobrodošli u Academiju de la Vida"
+        s = "Dobrodošli u Akademiju – Academia de la Vida"
         b = (f"Dobar dan, {a['full_name']},\n\n"
-             f"s radošću vam javljamo da vas je Upravni odbor {admitted} primio u članstvo Academije de la Vida. Dobrodošli!\n\n"
+             f"s radošću vam javljamo da vas je Upravni odbor {admitted} primio u članstvo udruge Academia de la Vida. Dobrodošli!\n\n"
              "Podaci za uplatu članarine:\n" + pay_lines +
              f"\n\nKod za plaćanje i sve podatke za kopiranje pronaći ćete ovdje:\n{link}\n\n"
              "U privitku su obavijest o uplati (PDF) i slika koda za plaćanje.\n"
@@ -396,7 +396,7 @@ def email_paid(lang, a, amount, period, paid_date):
         s = "Potvrda uplate članarine – Academia de la Vida"
         b = (f"Dobar dan, {a['full_name']},\n\n"
              f"potvrđujemo da smo primili vašu uplatu članarine od {amount} ({paid_date}).\n"
-             f"Članarina je plaćena za razdoblje {period}.\n\nHvala vam što ste dio Academije.")
+             f"Članarina je plaćena za razdoblje {period}.\n\nHvala vam što ste dio Akademije.")
     else:
         s = "Membership fee payment confirmed – Academia de la Vida"
         b = (f"Dear {a['full_name']},\n\n"
@@ -422,6 +422,6 @@ def email_reminder(lang, a, period, pay_lines, link):
 
 
 def unsub_footer(lang, link):
-    return (f"\n\n—\nOvu poruku primate jer ste se prijavili na newsletter Academije de la Vida.\nOdjava: {link}"
+    return (f"\n\n—\nOvu poruku primate jer ste se prijavili na newsletter udruge Academia de la Vida.\nOdjava: {link}"
             if lang == "hr" else
             f"\n\n—\nYou are receiving this because you signed up for the Academia de la Vida newsletter.\nUnsubscribe: {link}")
