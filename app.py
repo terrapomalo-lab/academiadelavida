@@ -599,7 +599,7 @@ def create_app(overrides=None):
                 s, f = mailer.send_outbox(con, cfg, batch=100)
                 flash(f"Poslano: {s}, neuspjelo: {f}.", "ok" if not f else "err")
             elif request.form.get("action") == "release":
-                con.execute("UPDATE outbox SET status='queued' WHERE id=? AND status='held'", (int(request.form["id"]),))
+                con.execute("UPDATE outbox SET status='queued', attempts=0, last_error=NULL WHERE id=? AND status='held'", (int(request.form["id"]),))
                 mailer.send_outbox(con, cfg, batch=10)
                 flash("Poruka je puštena u slanje.", "ok")
             return redirect(url_for("admin_outbox"))
