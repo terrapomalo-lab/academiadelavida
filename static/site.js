@@ -111,15 +111,15 @@
   var bf = document.getElementById("book-form");
   if (bf) {
     var BM = JSON.parse(bf.getAttribute("data-msg"));
-    var unit = +bf.getAttribute("data-unit");
+    var price = +bf.getAttribute("data-price"), ship = +bf.getAttribute("data-ship"), per = +bf.getAttribute("data-per");
+    var minFor = function (n) { return n * price + Math.ceil(n / per) * ship; };
     var blang = bf.getAttribute("data-lang");
     var qty = document.getElementById("b-qty"), amt = document.getElementById("b-amount");
     var berr = document.getElementById("book-err"), bok = document.getElementById("book-ok"), bbtn = document.getElementById("book-btn");
     var cents = function (v) { v = String(v).trim().replace(/\s|€/g, ""); if (blang === "hr") v = v.replace(/\./g, "").replace(",", "."); else v = v.replace(/,/g, ""); return Math.round(parseFloat(v) * 100); };
     var fmtc = function (c) { var s = (c / 100).toFixed(2); return blang === "hr" ? s.replace(".", ",") : s; };
     qty.addEventListener("change", function () {
-      var min = unit * (+qty.value);
-      if (!(cents(amt.value) >= min)) amt.value = fmtc(min);
+      amt.value = fmtc(minFor(+qty.value));
     });
     bf.addEventListener("submit", function (ev) {
       ev.preventDefault();

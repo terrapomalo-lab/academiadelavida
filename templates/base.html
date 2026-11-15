@@ -36,6 +36,6 @@
     {% set socials = cfg.SOCIAL_LINKS|selectattr(1)|list %}{% if socials %}<span class="meta">{% for name, url in socials %}<a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a>{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}
   </div>
 </footer>
-<script src="{{ url_for('static', filename='site.js') }}?v=5" defer></script>
+<script src="{{ url_for('static', filename='site.js') }}?v=6" defer></script>
 </body>
 </html>

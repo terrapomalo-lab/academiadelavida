@@ -656,6 +656,12 @@ def book_offer_active(cfg, today=None):
     return bool(until) and (today or date.today()).isoformat() <= until
 
 
+def book_min_cents(cfg, qty):
+    """Najmanja donacija: knjige + jedna dostava za svake započete 3 knjige."""
+    parcels = -(-qty // cfg["BOOK_PER_PARCEL"])
+    return qty * cfg["BOOK_PRICE_CENTS"] + parcels * cfg["BOOK_SHIP_CENTS"]
+
+
 def validate_book(form, cfg, lang):
     errs = []
     d = {"lang": lang if lang in ("hr", "en") else "hr"}
@@ -682,7 +688,7 @@ def validate_book(form, cfg, lang):
         d["amount_cents"] = parse_amount(form.get("iznos", ""))
     except ValueError:
         d["amount_cents"] = 0
-    if d["amount_cents"] < d["qty"] * cfg["BOOK_UNIT_CENTS"] or d["amount_cents"] > 1_000_000:
+    if d["amount_cents"] < book_min_cents(cfg, d["qty"]) or d["amount_cents"] > 1_000_000:
         errs.append("err_book_amount")
     if not form.get("privatnost"):
         errs.append("err_privacy")

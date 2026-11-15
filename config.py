@@ -52,7 +52,10 @@ class Config:
     FEES_V2_FROM = _env("ADV_FEES_V2_FROM", "")
     # Knjiga na dar uz donaciju (39,90 € + 3 € dostava BOX NOW), vrijedi do uključivo navedenog datuma
     BOOK_OFFER_UNTIL = _env("ADV_BOOK_OFFER_UNTIL", "2026-12-31")
-    BOOK_UNIT_CENTS = 4290
+    BOOK_PRICE_CENTS = 3990       # knjiga
+    BOOK_SHIP_CENTS = 300         # dostava BOX NOW po paketu
+    BOOK_PER_PARCEL = 3           # do 3 knjige u jednom paketu (jedna dostava)
+    BOOK_UNIT_CENTS = BOOK_PRICE_CENTS + BOOK_SHIP_CENTS   # najmanja donacija za 1 knjigu (42,90 €)
     BOOK_MAX_QTY = 5
     BOOK_COVER = "img/knjiga-naslovnica.jpg"
     FEE_STANDARD_EUR = 50         # stara cijena, koristi se samo ako je FEES_V2_FROM postavljen

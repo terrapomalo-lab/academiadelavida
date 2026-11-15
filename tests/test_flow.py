@@ -512,7 +512,8 @@ def test_book_order_flow(env):
     assert "Knjiga na dar uz donaciju" in html and "42,90 €" in html
     r = c.post("/api/knjiga", data=book_form(kolicina="2", iznos="50"))
     assert r.status_code == 400 and "err_book_amount" in r.json["errors"]
-    assert "85,80 €" in r.json["message"]
+    assert "82,80 €" in r.json["message"]
+    assert S.book_min_cents(app.config, 3) == 12270 and S.book_min_cents(app.config, 4) == 16560
     r = c.post("/api/knjiga", data=book_form(iznos="45,00"))
     assert r.status_code == 200 and r.json["ok"]
     o = con.execute("SELECT * FROM book_orders").fetchone()

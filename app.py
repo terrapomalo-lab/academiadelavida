@@ -175,7 +175,7 @@ def create_app(overrides=None):
             return jsonify({"ok": False, "message": t["err_rate"]}), 429
         d, errs = S.validate_book(request.form, cfg, lang)
         if errs:
-            mn = P.fmt_eur(d["qty"] * cfg["BOOK_UNIT_CENTS"], lang)
+            mn = P.fmt_eur(S.book_min_cents(cfg, d["qty"]), lang)
             return jsonify({"ok": False, "errors": errs,
                             "message": t["err_prefix"] + " " + "; ".join(t[e].replace("{min}", mn) for e in errs) + "."}), 400
         try:
