@@ -166,7 +166,7 @@
     {% set until = fmt_date(cfg.BOOK_OFFER_UNTIL, lang) %}
     <div class="book" id="knjiga">
       <div class="book-info{{ " has-cover" if book_cover }}">
-        {% if book_cover %}<img class="book-cover" src="{{ url_for('static', filename=cfg.BOOK_COVER) }}" alt="{{ t.book_title }}" width="360" height="480" loading="lazy">{% endif %}
+        {% if book_cover %}<img class="book-cover" src="{{ url_for('static', filename=cfg.BOOK_COVER) }}" alt="{{ t.book_title }}" width="360" height="332" loading="lazy">{% endif %}
         <div>
           <h3>{{ t.book_h }}</h3>
           <p class="book-title">{{ t.book_title }}</p>
