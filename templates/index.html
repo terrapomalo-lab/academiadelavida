@@ -15,6 +15,7 @@
 {% block headcta %}<a class="btn btn-gold btn-sm" href="#pristupnica">{{ t.cta_join }}</a>{% endblock %}
 {% block main %}
 
+{% if book_active %}<a class="promo" href="{{ url_for('book_hr') if lang == 'hr' else url_for('book_en') }}">{{ t.book_promo|replace('{until}', fmt_date(cfg.BOOK_OFFER_UNTIL, lang)) }} <span aria-hidden="true">→</span></a>{% endif %}
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-logo">
@@ -161,40 +162,7 @@
 <section class="band alt" id="podrska">
   <div class="wrap support">
     <div class="sec-head"><h2>{{ t.support_h }}</h2><p>{{ t.support_p }}</p><p>{{ t.support_sep }}</p></div>
-    {% if book_active %}
-    {% set unit = fmt_eur(cfg.BOOK_UNIT_CENTS, lang) %}
-    {% set until = fmt_date(cfg.BOOK_OFFER_UNTIL, lang) %}
-    <div class="book" id="knjiga">
-      <div class="book-info{{ " has-cover" if book_cover }}">
-        {% if book_cover %}<img class="book-cover" src="{{ url_for('static', filename=cfg.BOOK_COVER) }}" alt="{{ t.book_title }}" width="360" height="332" loading="lazy">{% endif %}
-        <div>
-          <h3>{{ t.book_h }}</h3>
-          <p class="book-title">{{ t.book_title }}</p>
-          <p class="book-sub">{{ t.book_sub }}</p>
-          <p class="book-meta">{{ t.book_authors }}<br>{{ t.book_publisher }}</p>
-          <p>{{ t.book_offer|replace('{until}', until)|replace('{unit}', unit) }}</p>
-          <p class="note">{{ t.book_offer_note|replace('{price}', fmt_eur(cfg.BOOK_PRICE_CENTS, lang))|replace('{ship}', fmt_eur(cfg.BOOK_SHIP_CENTS, lang))|replace('{per}', cfg.BOOK_PER_PARCEL|string) }}</p>
-        </div>
-      </div>
-      <form id="book-form" class="book-form" novalidate data-api="{{ url_for('api_book') }}" data-price="{{ cfg.BOOK_PRICE_CENTS }}" data-ship="{{ cfg.BOOK_SHIP_CENTS }}" data-per="{{ cfg.BOOK_PER_PARCEL }}" data-lang="{{ lang }}"
-            data-msg='{{ {"err_prefix": t.err_prefix, "server": t.err_server|replace("{email}", cfg.ORG_EMAIL), "sending": t.f_sending, "submit": t.book_submit, "code_hr": t.code_hr, "code_eu": t.code_eu, "dl_png": t.dl_png, "dl_pdf": t.dl_pdf, "copy": t.copy_btn, "copied": t.copied}|tojson|forceescape }}'>
-        <input type="hidden" name="lang" value="{{ lang }}">
-        <div class="hp" aria-hidden="true"><label>Web <input name="web" tabindex="-1" autocomplete="off"></label></div>
-        <div class="row2">
-          <div class="field"><label for="b-ime">{{ t.book_name }}</label><input type="text" id="b-ime" name="ime" autocomplete="name" required></div>
-          <div class="field"><label for="b-email">{{ t.book_email }}</label><input id="b-email" name="email" type="email" autocomplete="email" required></div>
-          <div class="field"><label for="b-mob">{{ t.book_phone }}</label><input id="b-mob" name="mobitel" type="tel" autocomplete="tel" required><small>{{ t.book_phone_hint }}</small></div>
-          <div class="field"><label for="b-box">{{ t.book_locker }}</label><input type="text" id="b-box" name="paketomat" required><small>{{ t.book_locker_hint }} <a href="{{ 'https://boxnow.hr/locker-finder' if lang == 'hr' else 'https://boxnow.hr/en/locker-finder' }}" target="_blank" rel="noopener">{{ t.book_locker_find }}</a></small></div>
-          <div class="field"><label for="b-qty">{{ t.book_qty }}</label><select id="b-qty" name="kolicina">{% for n in range(1, cfg.BOOK_MAX_QTY + 1) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
-          <div class="field"><label for="b-amount">{{ t.book_amount }}</label><input type="text" id="b-amount" name="iznos" inputmode="decimal" value="{{ '%d,%02d' % (cfg.BOOK_UNIT_CENTS // 100, cfg.BOOK_UNIT_CENTS % 100) if lang == 'hr' else '%d.%02d' % (cfg.BOOK_UNIT_CENTS // 100, cfg.BOOK_UNIT_CENTS % 100) }}" required></div>
-        </div>
-        <label class="choice"><input type="checkbox" name="privatnost" id="b-priv" value="1" required> <span>{{ t.book_privacy|linkify('obavijest', url_for('privacy_hr') if lang == 'hr' else url_for('privacy_en'), t.f_privacy_link) }}</span></label>
-        <p class="err" id="book-err" role="alert" hidden></p>
-        <button type="submit" class="btn btn-gold" id="book-btn">{{ t.book_submit }}</button>
-      </form>
-      <div class="ok paybox" id="book-ok" tabindex="-1" hidden></div>
-    </div>
-    {% endif %}
+    {% if book_active %}{% include "_book.html" %}{% endif %}
     <div class="don" id="don" data-lang="{{ lang }}" data-hub3="{{ url_for('don_hub3') }}" data-epc="{{ url_for('don_epc') }}" data-pdf="{{ url_for('don_pdf') }}"
          data-err="{{ t.don_err }}" data-copied="{{ t.copied }}">
       <div class="chips" role="group" aria-label="{{ t.don_amount }}">

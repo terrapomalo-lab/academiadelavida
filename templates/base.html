@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% block title %}Academia de la Vida{% endblock %}</title>
-<meta name="description" content="{{ t.meta_desc }}">
-<meta property="og:title" content="Academia de la Vida">
-<meta property="og:description" content="{{ t.meta_desc }}">
-<meta property="og:image" content="{{ cfg.BASE_URL }}{{ url_for('static', filename='img/og.jpg') }}">
+<meta name="description" content="{% block desc %}{{ t.meta_desc }}{% endblock %}">
+<meta property="og:title" content="{% block ogtitle %}Academia de la Vida{% endblock %}">
+<meta property="og:description" content="{{ self.desc() }}">
+<meta property="og:image" content="{{ cfg.BASE_URL }}{% block ogimage %}{{ url_for('static', filename='img/og.jpg') }}{% endblock %}">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#F9F4F0">
 <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
 <link rel="preload" href="{{ url_for('static', filename='fonts/bodoni-moda-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=5">
+<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=6">
 {% block head %}{% endblock %}
 </head>
 <body>

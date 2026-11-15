@@ -560,3 +560,12 @@ def test_book_offer_ends(env):
     app.config["BOOK_OFFER_UNTIL"] = "2000-01-01"
     assert "Knjiga na dar" not in c.get("/").get_data(as_text=True)
     assert c.post("/api/knjiga", data=book_form()).status_code == 410
+
+
+def test_book_page(env):
+    app, c, con = env
+    r = c.get("/knjiga")
+    html = r.get_data(as_text=True)
+    assert r.status_code == 200 and 'id="book-form"' in html and "knjiga-naslovnica.jpg" in html
+    assert 'href="/knjiga"' in c.get("/").get_data(as_text=True)
+    assert c.get("/en/book").status_code == 200

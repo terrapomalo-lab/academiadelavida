@@ -84,6 +84,14 @@ def create_app(overrides=None):
     def index_en_noslash():
         return redirect(url_for("index_en"), 301)
 
+    @app.get("/knjiga")
+    def book_hr():
+        return render_template("book.html", t=i18n.T["hr"], lang="hr", alt_url=url_for("book_en"), home=url_for("index_hr"))
+
+    @app.get("/en/book")
+    def book_en():
+        return render_template("book.html", t=i18n.T["en"], lang="en", alt_url=url_for("book_hr"), home=url_for("index_en"))
+
     @app.get("/privatnost")
     def privacy_hr():
         return render_template("privacy.html", t=i18n.T["hr"], lang="hr", alt_url=url_for("privacy_en"),

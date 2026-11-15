@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ t.book_h }} · Academia de la Vida{% endblock %}
+{% block desc %}{{ t.book_title }} – {{ t.book_offer|replace('{until}', fmt_date(cfg.BOOK_OFFER_UNTIL, lang))|replace('{unit}', fmt_eur(cfg.BOOK_UNIT_CENTS, lang)) }}{% endblock %}
+{% block ogtitle %}{{ t.book_h }} – Academia de la Vida{% endblock %}
+{% block ogimage %}{{ url_for('static', filename=cfg.BOOK_COVER) }}{% endblock %}
+{% block head %}
+<link rel="alternate" hreflang="hr" href="{{ cfg.BASE_URL }}{{ url_for('book_hr') }}">
+<link rel="alternate" hreflang="en" href="{{ cfg.BASE_URL }}{{ url_for('book_en') }}">
+{% endblock %}
+{% block main %}
+<section class="band book-page">
+  <div class="wrap">
+    {% if book_active %}{% include "_book.html" %}
+    {% else %}<p>{{ t.book_closed }}</p>{% endif %}
+    <p class="book-back">{{ t.book_about }} <a href="{{ home }}">{{ t.book_about_link }}</a></p>
+  </div>
+</section>
+{% endblock %}

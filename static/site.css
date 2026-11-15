@@ -241,3 +241,7 @@ footer .meta{color:#C9D3DE}
 .book-form{display:grid;gap:1.1rem;min-width:0}
 .book-form .field small{color:var(--muted);font-size:.85rem;line-height:1.4}
 .book-form input,.book-form select{min-width:0}
+.promo{display:block;background:var(--gold);color:var(--navy);text-align:center;padding:.7rem 16px;font-weight:500;text-decoration:none;line-height:1.4}
+.promo:hover,.promo:focus{background:var(--navy);color:#fff}
+.book-page{padding-top:2rem}
+.book-back{margin-top:1.5rem;color:var(--muted)}
