@@ -55,9 +55,13 @@ def create_app(overrides=None):
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         resp.headers.setdefault("X-Frame-Options", "DENY")
+        bn = ""
+        if request.path in ("/", "/en/", "/knjiga", "/en/book"):
+            bn = " https://*.boxnow.hr"   # BOX NOW karta paketomata (samo na stranicama s knjigom)
         resp.headers.setdefault("Content-Security-Policy",
-            "default-src 'self'; img-src 'self' data:; style-src 'self'; font-src 'self'; "
-            "script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'")
+            f"default-src 'self'; img-src 'self' data:{bn}; style-src 'self'{(' ' + chr(39) + 'unsafe-inline' + chr(39) + bn) if bn else ''}; "
+            f"font-src 'self'{bn}; script-src 'self'{bn}; connect-src 'self'{bn}; frame-src{bn or ' ' + chr(39) + 'none' + chr(39)}; "
+            "form-action 'self'; frame-ancestors 'none'; base-uri 'self'")
         if request.path.startswith(("/admin", "/p/")):
             resp.headers["Cache-Control"] = "no-store"
             resp.headers["X-Robots-Tag"] = "noindex"

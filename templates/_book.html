@@ -20,7 +20,11 @@
           <div class="field"><label for="b-ime">{{ t.book_name }}</label><input type="text" id="b-ime" name="ime" autocomplete="name" required></div>
           <div class="field"><label for="b-email">{{ t.book_email }}</label><input id="b-email" name="email" type="email" autocomplete="email" required></div>
           <div class="field"><label for="b-mob">{{ t.book_phone }}</label><input id="b-mob" name="mobitel" type="tel" autocomplete="tel" required><small>{{ t.book_phone_hint }}</small></div>
-          <div class="field"><label for="b-box">{{ t.book_locker }}</label><input type="text" id="b-box" name="paketomat" required><small>{{ t.book_locker_hint }} <a href="{{ 'https://boxnow.hr/locker-finder' if lang == 'hr' else 'https://boxnow.hr/en/locker-finder' }}" target="_blank" rel="noopener">{{ t.book_locker_find }}</a></small></div>
+          <div class="field"><label for="b-box">{{ t.book_locker }}</label>
+            <button type="button" class="btn btn-line btn-sm boxnow-map-widget-button" id="b-box-btn">{{ t.book_locker_pick }}</button>
+            <input type="text" id="b-box" name="paketomat" required placeholder="{{ t.book_locker_ph }}">
+            <small>{{ t.book_locker_hint }} <a href="{{ 'https://boxnow.hr/locker-finder' if lang == 'hr' else 'https://boxnow.hr/en/locker-finder' }}" target="_blank" rel="noopener">{{ t.book_locker_find }}</a></small>
+            <div id="boxnowmap"></div></div>
           <div class="field"><label for="b-qty">{{ t.book_qty }}</label><select id="b-qty" name="kolicina">{% for n in range(1, cfg.BOOK_MAX_QTY + 1) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
           <div class="field"><label for="b-amount">{{ t.book_amount }}</label><input type="text" id="b-amount" name="iznos" inputmode="decimal" value="{{ '%d,%02d' % (cfg.BOOK_UNIT_CENTS // 100, cfg.BOOK_UNIT_CENTS % 100) if lang == 'hr' else '%d.%02d' % (cfg.BOOK_UNIT_CENTS // 100, cfg.BOOK_UNIT_CENTS % 100) }}" required></div>
         </div>
@@ -30,3 +34,5 @@
       </form>
       <div class="ok paybox" id="book-ok" tabindex="-1" hidden></div>
     </div>
+<script src="{{ url_for('static', filename='boxnow.js') }}?v=1" defer></script>
+<script src="https://widget-cdn.boxnow.hr/map-widget/client/v5.js" defer></script>
