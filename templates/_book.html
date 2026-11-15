@@ -8,6 +8,22 @@
           <p class="book-title">{{ t.book_title }}</p>
           <p class="book-sub">{{ t.book_sub }}</p>
           <p class="book-meta">{{ t.book_authors }}<br>{{ t.book_publisher }}</p>
+          {% if t.book_lead %}<p>{{ t.book_lead }}</p>{% endif %}
+          {% if not full and t.book_more %}<p><a href="{{ url_for('book_hr') if lang == 'hr' else url_for('book_en') }}">{{ t.book_more }}</a></p>{% endif %}
+        </div>
+      </div>
+      {% if full and t.book_about_p %}
+      <div class="book-about">
+        <h3>{{ t.book_about_h }}</h3>
+        {% for p in t.book_about_p %}<p>{{ p }}</p>{% endfor %}
+        <h3>{{ t.book_diff_h }}</h3>
+        <ul class="book-diff">{% for h, p in t.book_diff %}<li><strong>{{ h }}</strong> {{ p }}</li>{% endfor %}</ul>
+        <p class="book-meta">{{ t.book_specs }}</p>
+        {% if t.book_event %}<p class="book-event">{{ t.book_event }}</p>{% endif %}
+      </div>
+      {% endif %}
+      <div class="book-offer">
+        <div>
           <p>{{ t.book_offer|replace('{until}', until)|replace('{unit}', unit) }}</p>
           <p class="note">{{ t.book_offer_note|replace('{price}', fmt_eur(cfg.BOOK_PRICE_CENTS, lang))|replace('{ship}', fmt_eur(cfg.BOOK_SHIP_CENTS, lang))|replace('{per}', cfg.BOOK_PER_PARCEL|string) }}</p>
         </div>

@@ -245,3 +245,12 @@ footer .meta{color:#C9D3DE}
 .promo:hover,.promo:focus{background:var(--navy);color:#fff}
 .book-page{padding-top:2rem}
 .book-back{margin-top:1.5rem;color:var(--muted)}
+.book-about{border-top:1px solid var(--line);padding-top:1.2rem}
+.book-about h3{font-size:1.2rem;margin:1.2rem 0 .5rem}
+.book-about h3:first-child{margin-top:0}
+.book-diff{padding-left:1.1rem;margin:0 0 1rem}
+.book-diff li{margin-bottom:.5rem}
+.book-event{border-left:3px solid var(--gold);padding-left:.8rem;font-weight:500}
+.book-offer{border-top:1px solid var(--line);padding-top:1.2rem;font-weight:500}
+.book-offer .note{font-weight:400}
+.book-about p{margin:0 0 .75rem}
