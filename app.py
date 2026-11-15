@@ -40,7 +40,9 @@ def create_app(overrides=None):
     # ------------------------------------------------------------ predlošci
     @app.context_processor
     def inject():
-        return {"cfg": cfg, "fmt_eur": P.fmt_eur, "fmt_date": P.fmt_date, "csrf_token": csrf_token}
+        return {"cfg": cfg, "fmt_eur": P.fmt_eur, "fmt_date": P.fmt_date, "csrf_token": csrf_token,
+                "book_active": S.book_offer_active(cfg),
+                "book_cover": os.path.exists(os.path.join(app.static_folder, cfg["BOOK_COVER"]))}
 
     @app.template_filter("linkify")
     def linkify(s, placeholder, url, label):
@@ -158,6 +160,64 @@ def create_app(overrides=None):
         }
         return {"ok": True, "public_no": a["public_no"], "mail_sent": sent, "title": t["ok_h"], "paragraphs": parts,
                 "pay": payinfo}, 200
+
+    # ------------------------------------------------------------ knjiga na dar uz donaciju
+    @app.post("/api/knjiga")
+    def api_book():
+        con = DB.get_db()
+        lang = request.form.get("lang") if request.form.get("lang") in ("hr", "en") else "hr"
+        t = i18n.T[lang]
+        if request.form.get("web"):
+            return jsonify({"ok": False, "message": t["err_server"].replace("{email}", cfg["ORG_EMAIL"])}), 400
+        if not S.book_offer_active(cfg):
+            return jsonify({"ok": False, "message": t["book_closed"]}), 410
+        if S.book_rate_limited(con, client_ip(), 20):
+            return jsonify({"ok": False, "message": t["err_rate"]}), 429
+        d, errs = S.validate_book(request.form, cfg, lang)
+        if errs:
+            mn = P.fmt_eur(d["qty"] * cfg["BOOK_UNIT_CENTS"], lang)
+            return jsonify({"ok": False, "errors": errs,
+                            "message": t["err_prefix"] + " " + "; ".join(t[e].replace("{min}", mn) for e in errs) + "."}), 400
+        try:
+            o = S.create_book_order(con, d, ip=client_ip())
+        except Exception:
+            app.logger.exception("Spremanje zahtjeva za knjigu nije uspjelo")
+            return jsonify({"ok": False, "message": t["err_server"].replace("{email}", cfg["ORG_EMAIL"])}), 500
+        try:
+            con.execute("BEGIN IMMEDIATE")
+            oid = S.queue_book_confirmation(con, cfg, o)
+            DB.audit(con, "web", "book_order", o["reference"])
+            con.execute("COMMIT")
+            mailer.send_outbox(con, cfg, ids=[oid], batch=1, include_failed=False)
+        except Exception:
+            app.logger.exception("Potvrda za knjigu nije poslana; zahtjev je spremljen")
+            try:
+                con.execute("ROLLBACK")
+            except Exception:
+                pass
+        _pay, rows = S.book_pay_rows(cfg, o, lang)
+        return jsonify({"ok": True, "title": t["book_ok_h"],
+                        "paragraphs": [t["book_ok_p"].replace("{ref}", o["reference"]).replace("{email}", o["email"])],
+                        "pay": {"title": t["book_pay_h"], "rows": rows,
+                                "hub3": url_for("book_hub3", token=o["token"]),
+                                "hub3_dl": url_for("book_hub3", token=o["token"], dl=1),
+                                "epc": url_for("book_epc", token=o["token"]), "pdf": None, "page": None}}), 200
+
+    def _book(token):
+        o = DB.get_db().execute("SELECT * FROM book_orders WHERE token=?", (token,)).fetchone()
+        if not o:
+            abort(404)
+        return o
+
+    @app.get("/k/<token>/hub3.png")
+    def book_hub3(token):
+        o = _book(token)
+        return _png(P.hub3_png(P.book_payment(cfg, o)["hub3"], scale=4), f"kod-{o['reference']}.png", request.args.get("dl") == "1")
+
+    @app.get("/k/<token>/epc.png")
+    def book_epc(token):
+        o = _book(token)
+        return _png(P.epc_png(P.book_payment(cfg, o)["epc"]), f"epc-{o['reference']}.png", request.args.get("dl") == "1")
 
     @app.post("/api/prijava")
     def api_apply():
@@ -552,6 +612,48 @@ def create_app(overrides=None):
             flash(f"Član je upisan pod brojem {a['public_no']}.", "ok")
             return redirect(url_for("admin_member", app_id=a["id"]))
         return render_template("admin/member_new.html", f={})
+
+    # --- knjige uz donaciju
+    @app.route("/admin/knjige", methods=["GET", "POST"])
+    @admin_required
+    def admin_books():
+        con = DB.get_db()
+        if request.method == "POST":
+            oid = int(request.form.get("order_id", "0") or 0)
+            action = request.form.get("action")
+            con.execute("BEGIN IMMEDIATE")
+            try:
+                if action == "paid":
+                    try:
+                        bdate = S.parse_date(request.form.get("date", ""))
+                        amt = S.parse_amount(request.form.get("amount", ""))
+                    except ValueError:
+                        con.execute("ROLLBACK")
+                        flash("Upišite datum i iznos uplate.", "err")
+                        return redirect(url_for("admin_books"))
+                    ok = S.mark_book_paid(con, cfg, g.admin, oid, bdate, amt)
+                    msg = "Uplata je evidentirana; donatoru je poslana zahvala." if ok else "Zahtjev nije u stanju „čeka uplatu“."
+                elif action == "shipped":
+                    ok = S.mark_book_shipped(con, g.admin, oid, request.form.get("tracking", "").strip()[:60])
+                    msg = "Označeno kao poslano; donatoru je poslana obavijest." if ok else "Najprije evidentirajte uplatu."
+                elif action == "cancel":
+                    ok = con.execute("UPDATE book_orders SET status='cancelled' WHERE id=? AND status='pending'", (oid,)).rowcount == 1
+                    if ok:
+                        DB.audit(con, g.admin, "book_cancel", str(oid))
+                    msg = "Zahtjev je otkazan." if ok else "Otkazati se može samo zahtjev koji čeka uplatu."
+                else:
+                    ok, msg = False, "Nepoznata radnja."
+                con.execute("COMMIT")
+            except Exception:
+                con.execute("ROLLBACK")
+                raise
+            if ok:
+                mailer.send_outbox(con, cfg, batch=10)
+            flash(msg, "ok" if ok else "err")
+            return redirect(url_for("admin_books"))
+        orders = con.execute("""SELECT * FROM book_orders ORDER BY
+                                CASE status WHEN 'paid' THEN 0 WHEN 'pending' THEN 1 WHEN 'shipped' THEN 2 ELSE 3 END, id DESC""").fetchall()
+        return render_template("admin/books.html", orders=orders, fmt_eur=P.fmt_eur, today=date.today().isoformat())
 
     # --- uplate
     @app.route("/admin/uplate", methods=["GET", "POST"])

@@ -30,7 +30,7 @@
     var i1 = el("img"); i1.src = p.hub3; i1.alt = "HUB3"; i1.width = 690; i1.height = 204; c1.appendChild(i1);
     var dl = el("div", "dl");
     var a1 = el("a", "btn btn-line btn-sm", M.dl_png); a1.href = p.hub3_dl; dl.appendChild(a1);
-    var a2 = el("a", "btn btn-line btn-sm", M.dl_pdf); a2.href = p.pdf; dl.appendChild(a2);
+    if (p.pdf) { var a2 = el("a", "btn btn-line btn-sm", M.dl_pdf); a2.href = p.pdf; dl.appendChild(a2); }
     c1.appendChild(dl); codes.appendChild(c1);
     var c2 = el("div", "code qr"); c2.appendChild(el("h4", null, M.code_eu));
     var i2 = el("img"); i2.src = p.epc; i2.alt = "EPC QR"; i2.width = 300; i2.height = 300; c2.appendChild(i2);
@@ -45,7 +45,7 @@
       row.appendChild(b); d.appendChild(row);
     });
     box.appendChild(d);
-    var pl = el("p", "note", p.page_label + " "); var lk = el("a", null, p.page); lk.href = p.page; pl.appendChild(lk); box.appendChild(pl);
+    if (p.page) { var pl = el("p", "note", p.page_label + " "); var lk = el("a", null, p.page); lk.href = p.page; pl.appendChild(lk); box.appendChild(pl); }
   }
   // ---------------------------------------------------------------- pristupnica
   var form = document.getElementById("apply");
@@ -104,6 +104,39 @@
         })
         .catch(function () { showErr(M.server); })
         .then(function () { btn.disabled = false; btn.textContent = M.submit; });
+    });
+  }
+
+  // ---------------------------------------------------------------- knjiga uz donaciju
+  var bf = document.getElementById("book-form");
+  if (bf) {
+    var BM = JSON.parse(bf.getAttribute("data-msg"));
+    var unit = +bf.getAttribute("data-unit");
+    var blang = bf.getAttribute("data-lang");
+    var qty = document.getElementById("b-qty"), amt = document.getElementById("b-amount");
+    var berr = document.getElementById("book-err"), bok = document.getElementById("book-ok"), bbtn = document.getElementById("book-btn");
+    var cents = function (v) { v = String(v).trim().replace(/\s|€/g, ""); if (blang === "hr") v = v.replace(/\./g, "").replace(",", "."); else v = v.replace(/,/g, ""); return Math.round(parseFloat(v) * 100); };
+    var fmtc = function (c) { var s = (c / 100).toFixed(2); return blang === "hr" ? s.replace(".", ",") : s; };
+    qty.addEventListener("change", function () {
+      var min = unit * (+qty.value);
+      if (!(cents(amt.value) >= min)) amt.value = fmtc(min);
+    });
+    bf.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      berr.hidden = true; bbtn.disabled = true; bbtn.textContent = BM.sending;
+      fetch(bf.getAttribute("data-api"), { method: "POST", body: new FormData(bf), headers: { "Accept": "application/json" } })
+        .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+        .then(function (res) {
+          if (res.status === 200 && res.j.ok) {
+            bok.innerHTML = "";
+            bok.appendChild(el("h3", null, res.j.title));
+            res.j.paragraphs.forEach(function (p) { bok.appendChild(el("p", null, p)); });
+            renderPay(bok, res.j.pay, BM);
+            bf.hidden = true; bok.hidden = false; bok.focus(); bok.scrollIntoView({ block: "start" });
+          } else { berr.textContent = res.j.message || BM.server; berr.hidden = false; }
+        })
+        .catch(function () { berr.textContent = BM.server; berr.hidden = false; })
+        .then(function () { bbtn.disabled = false; bbtn.textContent = BM.submit; });
     });
   }
 

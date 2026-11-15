@@ -50,6 +50,11 @@ class Config:
     FEE_REDUCED_EUR = 20          # samo uz pridruženo članstvo
     # Prazno = sve prijave po ovoj odluci. (Datum se upisuje samo ako bi starije prijave trebale plaćati po staroj cijeni.)
     FEES_V2_FROM = _env("ADV_FEES_V2_FROM", "")
+    # Knjiga na dar uz donaciju (39,90 € + 3 € dostava BOX NOW), vrijedi do uključivo navedenog datuma
+    BOOK_OFFER_UNTIL = _env("ADV_BOOK_OFFER_UNTIL", "2026-12-31")
+    BOOK_UNIT_CENTS = 4290
+    BOOK_MAX_QTY = 5
+    BOOK_COVER = "img/knjiga-naslovnica.jpg"
     FEE_STANDARD_EUR = 50         # stara cijena, koristi se samo ako je FEES_V2_FROM postavljen
     FEE_STUDENT_EUR = 20
 

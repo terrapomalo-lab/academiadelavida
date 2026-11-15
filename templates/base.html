@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#F9F4F0">
 <link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
 <link rel="preload" href="{{ url_for('static', filename='fonts/bodoni-moda-latin-500-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=4">
+<link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=5">
 {% block head %}{% endblock %}
 </head>
 <body>
@@ -36,6 +36,6 @@
     {% set socials = cfg.SOCIAL_LINKS|selectattr(1)|list %}{% if socials %}<span class="meta">{% for name, url in socials %}<a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a>{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}
   </div>
 </footer>
-<script src="{{ url_for('static', filename='site.js') }}?v=4" defer></script>
+<script src="{{ url_for('static', filename='site.js') }}?v=5" defer></script>
 </body>
 </html>

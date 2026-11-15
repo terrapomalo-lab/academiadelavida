@@ -124,6 +124,29 @@ T = {
   "support_h": "Podržite naš rad",
   "support_p": "Akademiju vode volonteri. Dobrovoljnom donacijom pomažete razvoj edukativnih sadržaja, aktivnosti i zajednice. Sredstva koristimo za ciljeve utvrđene Statutom.",
   "support_sep": "Donacija je odvojena od članarine.",
+  "book_h": "Knjiga na dar uz donaciju",
+  "book_title": "POMALO – Mediteransko umijeće življenja",
+  "book_sub": "Što nam hrvatski Jadran otkriva o zdravlju, dugovječnosti i dobrom životu",
+  "book_authors": "Vida Demarin i Snježana Cenić Stojaković",
+  "book_publisher": "Nakladnik: Terra Pomalo d.o.o., 2026. Hrvatsko izdanje.",
+  "book_offer": "Do {until} uz donaciju od {unit} ili više na dar dobivate knjigu, s dostavom u BOX NOW paketomat u Hrvatskoj.",
+  "book_offer_note": "Za svaku knjigu donacija je najmanje {unit} (uključuje dostavu). Iznos iznad toga ide u cijelosti za rad Akademije.",
+  "book_name": "Ime i prezime", "book_email": "E-mail", "book_phone": "Mobitel",
+  "book_phone_hint": "BOX NOW na ovaj broj šalje kod za otvaranje paketomata.",
+  "book_locker": "BOX NOW paketomat",
+  "book_locker_hint": "Upišite naziv ili adresu paketomata u koji želite primiti knjigu.",
+  "book_locker_find": "Pronađite paketomat na karti",
+  "book_qty": "Broj knjiga", "book_amount": "Iznos donacije (€)",
+  "book_privacy": "Podatke koristimo samo za slanje knjige i potvrdu donacije; ime, mobitel i e-mail predajemo dostavnoj službi BOX NOW. Pročitao/la sam {obavijest}.",
+  "book_submit": "Pošalji i prikaži kod za uplatu",
+  "book_ok_h": "Hvala vam!",
+  "book_ok_p": "Zaprimili smo vaš zahtjev {ref}. Knjigu šaljemo nakon što donacija stigne na račun udruge. Na {email} stiže potvrda s podacima za uplatu.",
+  "book_pay_h": "Uplatite donaciju",
+  "err_phone": "upišite broj mobitela",
+  "err_locker": "upišite BOX NOW paketomat",
+  "err_qty": "odaberite broj knjiga",
+  "err_book_amount": "donacija za odabrani broj knjiga mora biti najmanje {min}",
+  "book_closed": "Ponuda knjige uz donaciju je završila.",
   "don_amount": "Iznos donacije (€)", "don_other": "Drugi iznos",
   "don_show": "Primijeni iznos",
   "don_err": "Upišite iznos između 1 i 10.000 €.",
@@ -287,6 +310,29 @@ T = {
   "support_h": "Support our work",
   "support_p": "The Academia is run by volunteers. A voluntary donation helps us develop educational content, activities and our community. Funds are used for the aims set out in the Statute.",
   "support_sep": "Donations are separate from the membership fee.",
+  "book_h": "A book as a thank-you for your donation",
+  "book_title": "POMALO – Mediteransko umijeće življenja",
+  "book_sub": "Što nam hrvatski Jadran otkriva o zdravlju, dugovječnosti i dobrom životu",
+  "book_authors": "Vida Demarin and Snježana Cenić Stojaković",
+  "book_publisher": "Publisher: Terra Pomalo d.o.o., 2026. Croatian-language edition.",
+  "book_offer": "Until {until}, with a donation of {unit} or more you receive the book as a gift, delivered to a BOX NOW parcel locker in Croatia.",
+  "book_offer_note": "The minimum donation is {unit} per book (delivery included). Any amount above that goes entirely to the work of the Academia.",
+  "book_name": "Full name", "book_email": "Email", "book_phone": "Mobile phone",
+  "book_phone_hint": "BOX NOW sends the locker opening code to this number.",
+  "book_locker": "BOX NOW parcel locker",
+  "book_locker_hint": "Enter the name or address of the parcel locker where you want to receive the book.",
+  "book_locker_find": "Find a parcel locker on the map",
+  "book_qty": "Number of books", "book_amount": "Donation amount (€)",
+  "book_privacy": "We use your data only to send the book and confirm your donation; your name, mobile number and email are passed to the delivery service BOX NOW. I have read the {obavijest}.",
+  "book_submit": "Send and show payment code",
+  "book_ok_h": "Thank you!",
+  "book_ok_p": "We have received your request {ref}. We send the book once the donation reaches the association's account. A confirmation with payment details is on its way to {email}.",
+  "book_pay_h": "Make your donation",
+  "err_phone": "enter your mobile number",
+  "err_locker": "enter a BOX NOW parcel locker",
+  "err_qty": "choose the number of books",
+  "err_book_amount": "the donation for the selected number of books must be at least {min}",
+  "book_closed": "The book offer has ended.",
   "don_amount": "Donation amount (€)", "don_other": "Other amount",
   "don_show": "Apply amount",
   "don_err": "Enter an amount between €1 and €10,000.",
@@ -437,3 +483,53 @@ def unsub_footer(lang, link):
     return (f"\n\n—\nOvu poruku primate jer ste se prijavili na newsletter udruge Academia de la Vida.\nOdjava: {link}"
             if lang == "hr" else
             f"\n\n—\nYou are receiving this because you signed up for the Academia de la Vida newsletter.\nUnsubscribe: {link}")
+
+
+def email_book_confirmation(lang, o, pay_txt, amount):
+    if lang == "hr":
+        s = f"Donacija uz knjigu {o['reference']} – Academia de la Vida"
+        b = (f"Dobar dan, {o['full_name']},\n\nhvala vam na podršci. Zaprimili smo vaš zahtjev za knjigu "
+             f"„POMALO – Mediteransko umijeće življenja” uz donaciju ({o['qty']} kom.).\n\n"
+             f"Podaci za uplatu donacije od {amount}:\n{pay_txt}\n\n"
+             "Kod za plaćanje je u privitku; možete ga skenirati u aplikaciji mobilnog bankarstva.\n"
+             "Važno: upišite točno ovaj poziv na broj, da bismo uplatu povezali s vašim zahtjevom.\n\n"
+             f"Knjigu šaljemo nakon što donacija stigne na račun udruge, u BOX NOW paketomat: {o['locker']}.\n"
+             "Kod za otvaranje paketomata BOX NOW šalje SMS-om na vaš mobitel.")
+    else:
+        s = f"Donation with book {o['reference']} – Academia de la Vida"
+        b = (f"Dear {o['full_name']},\n\nthank you for your support. We have received your request for the book "
+             f"“POMALO – Mediteransko umijeće življenja” with your donation ({o['qty']} pcs).\n\n"
+             f"Payment details for your donation of {amount}:\n{pay_txt}\n\n"
+             "The payment code is attached; you can scan it in your mobile banking app.\n"
+             "Important: use exactly this reference so we can match the payment to your request.\n\n"
+             f"We send the book once the donation reaches the association's account, to the BOX NOW parcel locker: {o['locker']}.\n"
+             "BOX NOW sends the locker opening code to your mobile phone by SMS.")
+    return s, b + _sig(lang)
+
+
+def email_book_paid(lang, o):
+    if lang == "hr":
+        s = "Donacija je zaprimljena – Academia de la Vida"
+        b = (f"Dobar dan, {o['full_name']},\n\nvaša donacija ({o['reference']}) stigla je na račun udruge. Hvala vam!\n"
+             f"Knjigu šaljemo u sljedećih nekoliko radnih dana u BOX NOW paketomat: {o['locker']}. "
+             "Kad je pošaljemo, javit ćemo vam broj pošiljke.")
+    else:
+        s = "Donation received – Academia de la Vida"
+        b = (f"Dear {o['full_name']},\n\nyour donation ({o['reference']}) has reached the association's account. Thank you!\n"
+             f"We will send the book within the next few working days to the BOX NOW parcel locker: {o['locker']}. "
+             "We will let you know the shipment number once it is on its way.")
+    return s, b + _sig(lang)
+
+
+def email_book_shipped(lang, o, tracking):
+    if lang == "hr":
+        s = "Knjiga je poslana – Academia de la Vida"
+        b = (f"Dobar dan, {o['full_name']},\n\nknjiga je poslana u BOX NOW paketomat: {o['locker']}.\n"
+             + (f"Broj pošiljke: {tracking}\n" if tracking else "") +
+             "Kad pošiljka stigne, BOX NOW će vam SMS-om poslati kod za otvaranje paketomata.\n\nUgodno čitanje!")
+    else:
+        s = "Your book is on its way – Academia de la Vida"
+        b = (f"Dear {o['full_name']},\n\nthe book has been sent to the BOX NOW parcel locker: {o['locker']}.\n"
+             + (f"Shipment number: {tracking}\n" if tracking else "") +
+             "When it arrives, BOX NOW will send you the locker opening code by SMS.\n\nEnjoy reading!")
+    return s, b + _sig(lang)

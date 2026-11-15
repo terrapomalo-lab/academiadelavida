@@ -15,6 +15,7 @@
   <a href="{{ url_for('admin_applications') }}" class="{{ 'cur' if p.startswith('/admin/prijave') or p.startswith('/admin/odluka') }}">Prijave</a>
   <a href="{{ url_for('admin_members') }}" class="{{ 'cur' if p.startswith('/admin/clan') }}">Članovi</a>
   <a href="{{ url_for('admin_payments') }}" class="{{ 'cur' if p.startswith('/admin/uplate') }}">Uplate</a>
+  <a href="{{ url_for('admin_books') }}" class="{{ 'cur' if p.startswith('/admin/knjige') }}">Knjige</a>
   <a href="{{ url_for('admin_decisions') }}" class="{{ 'cur' if p.startswith('/admin/odluke') }}">Odluke</a>
   <a href="{{ url_for('admin_outbox') }}" class="{{ 'cur' if p.startswith('/admin/poruke') }}">Poruke</a>
   <a href="{{ url_for('admin_newsletter') }}" class="{{ 'cur' if p.startswith('/admin/newsletter') }}">Newsletter</a>

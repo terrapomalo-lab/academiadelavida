@@ -83,7 +83,6 @@ def test_pages_and_links(env):
     en = c.get("/en/").get_data(as_text=True)
     assert "Become a member" in en and "I do not have a Croatian personal identification number (OIB)" in en
     assert "Uskoro" not in html and "Coming soon" not in en
-    assert "knjig" not in html.lower()
     assert c.get("/admin").status_code == 302
     assert c.get("/p/nepostojeci").status_code == 404
 
@@ -498,3 +497,65 @@ def test_old_applications_pay_current_fees(env):
     con.execute("UPDATE applications SET created_at='2026-10-23T10:00:00'")
     a = con.execute("SELECT * FROM applications").fetchone()
     assert S.fee_cents(app.config, a) == 15000
+
+
+def book_form(**kw):
+    d = {"lang": "hr", "ime": "Ana Anić", "email": "ana@example.com", "mobitel": "091 234 5678",
+         "paketomat": "BOX NOW Zagreb, Ilica 1", "kolicina": "1", "iznos": "42,90", "privatnost": "1"}
+    d.update(kw)
+    return d
+
+
+def test_book_order_flow(env):
+    app, c, con = env
+    html = c.get("/").get_data(as_text=True)
+    assert "Knjiga na dar uz donaciju" in html and "42,90 €" in html
+    r = c.post("/api/knjiga", data=book_form(kolicina="2", iznos="50"))
+    assert r.status_code == 400 and "err_book_amount" in r.json["errors"]
+    assert "85,80 €" in r.json["message"]
+    r = c.post("/api/knjiga", data=book_form(iznos="45,00"))
+    assert r.status_code == 200 and r.json["ok"]
+    o = con.execute("SELECT * FROM book_orders").fetchone()
+    assert o["reference"].startswith("7-") and o["amount_cents"] == 4500 and o["status"] == "pending"
+    assert c.get(r.json["pay"]["hub3"]).status_code == 200
+    assert c.get(r.json["pay"]["epc"]).status_code == 200
+    mail = con.execute("SELECT * FROM outbox WHERE kind='book_confirmation'").fetchone()
+    assert o["reference"] in mail["body_text"] and "BOX NOW" in mail["body_text"]
+    # izvod: uplata s pozivom na broj automatski se povezuje
+    csv_ = f"datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije\n2026-11-16;45,00;Ana Anić;HR00 {o['reference']};Donacija;T-B1\n"
+    res = S.import_statement(con, app.config, "test", csv_.encode())
+    assert res.get("books") == 1 and res["review"] == 0
+    o = con.execute("SELECT * FROM book_orders").fetchone()
+    assert o["status"] == "paid" and o["paid_date"] == "2026-11-16"
+    assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='book_paid'").fetchone()[0] == 1
+    # ista transakcija ponovno: duplikat, bez nove zahvale
+    res = S.import_statement(con, app.config, "test", csv_.encode())
+    assert res["duplicates"] == 1
+    # slanje
+    tok = login(c)
+    r = c.post("/admin/knjige", data={"csrf": tok, "order_id": o["id"], "action": "shipped", "tracking": "1234567890"})
+    assert r.status_code == 302
+    o = con.execute("SELECT * FROM book_orders").fetchone()
+    assert o["status"] == "shipped" and o["tracking"] == "1234567890"
+    assert "1234567890" in con.execute("SELECT body_text FROM outbox WHERE kind='book_shipped'").fetchone()[0]
+    assert "Knjige" in c.get("/admin/knjige").get_data(as_text=True)
+    assert S.digest(con, app.config, "2000-01-01") and "knjige" in S.digest(con, app.config, "2000-01-01").lower()
+
+
+def test_book_manual_payment_and_short_amount(env):
+    app, c, con = env
+    c.post("/api/knjiga", data=book_form())
+    o = con.execute("SELECT * FROM book_orders").fetchone()
+    csv_ = f"datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije\n2026-11-16;20,00;Ana;HR00 {o['reference']};;T-B2\n"
+    res = S.import_statement(con, app.config, "test", csv_.encode())
+    assert res["review"] == 1 and con.execute("SELECT status FROM book_orders").fetchone()[0] == "pending"
+    tok = login(c)
+    c.post("/admin/knjige", data={"csrf": tok, "order_id": o["id"], "action": "paid", "date": "2026-11-17", "amount": "42,90"})
+    assert con.execute("SELECT status FROM book_orders").fetchone()[0] == "paid"
+
+
+def test_book_offer_ends(env):
+    app, c, con = env
+    app.config["BOOK_OFFER_UNTIL"] = "2000-01-01"
+    assert "Knjiga na dar" not in c.get("/").get_data(as_text=True)
+    assert c.post("/api/knjiga", data=book_form()).status_code == 410

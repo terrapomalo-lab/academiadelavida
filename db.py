@@ -109,6 +109,31 @@ CREATE TABLE IF NOT EXISTS payments (
   created_by TEXT NOT NULL
 );
 
+-- Knjiga na dar uz donaciju
+CREATE TABLE IF NOT EXISTS book_orders (
+  id INTEGER PRIMARY KEY,
+  year INTEGER NOT NULL,
+  seq INTEGER NOT NULL,
+  reference TEXT UNIQUE NOT NULL,          -- poziv na broj, model HR00: 7-GODINA-REDNI BROJ
+  token TEXT UNIQUE NOT NULL,
+  created_at TEXT NOT NULL,
+  lang TEXT NOT NULL DEFAULT 'hr',
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  locker TEXT NOT NULL,                    -- BOX NOW paketomat (kako ga je upisao donator)
+  qty INTEGER NOT NULL DEFAULT 1,
+  amount_cents INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',  -- pending | paid | shipped | cancelled
+  payment_id INTEGER REFERENCES payments(id),
+  paid_date TEXT,
+  shipped_at TEXT,
+  tracking TEXT,
+  note TEXT,
+  ip TEXT,
+  UNIQUE(year, seq)
+);
+
 -- Red poruka: sve e-poruke prolaze kroz ovu tablicu (ponovno slanje ako slanje zakaže)
 CREATE TABLE IF NOT EXISTS outbox (
   id INTEGER PRIMARY KEY,

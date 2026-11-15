@@ -476,8 +476,22 @@ def import_statement(con, cfg, actor, file_bytes):
             res["duplicates"] += 1
             continue
         kind, status, due_id, reason = "unknown", "review", None, None
-        m = REF_RE.search(ref) or REF_RE.search(desc)
-        if m:
+        book = None
+        bm = BOOK_RE.search(ref) or BOOK_RE.search(desc)
+        m = None if bm else (REF_RE.search(ref) or REF_RE.search(desc))
+        if bm:
+            book = con.execute("SELECT * FROM book_orders WHERE reference=?", (bm.group(0),)).fetchone()
+            if not book:
+                reason = f"Poziv na broj {bm.group(0)} ne odgovara nijednoj narudžbi knjige."
+            elif book["status"] != "pending":
+                reason = f"Donacija za knjigu {bm.group(0)} već je evidentirana (moguća dvostruka uplata)."
+                book = None
+            elif amt < book["amount_cents"]:
+                reason = f"Iznos {P.fmt_eur(amt)} manji je od dogovorene donacije {P.fmt_eur(book['amount_cents'])} za knjigu {bm.group(0)}."
+                book = None
+            else:
+                kind, status, ref = "donation", "matched", bm.group(0)
+        elif m:
             due = con.execute("SELECT * FROM dues WHERE reference=?", (m.group(0),)).fetchone()
             if not due:
                 y, q, idx = m.groups()
@@ -515,6 +529,9 @@ def import_statement(con, cfg, actor, file_bytes):
                 res["matched"] += 1
             elif kind == "donation":
                 res["donations"] += 1
+                if book is not None:
+                    mark_book_paid(con, cfg, actor, book["id"], bdate, amt, payment_id=pid)
+                    res["books"] = res.get("books", 0) + 1
             elif status == "prepaid":
                 res["prepaid"] += 1
             else:
@@ -604,7 +621,9 @@ def digest(con, cfg, since_iso):
     failed = con.execute("SELECT COUNT(*) FROM outbox WHERE status='failed'").fetchone()[0]
     review = con.execute("SELECT COUNT(*) FROM payments WHERE status='review'").fetchone()[0]
     pending = con.execute("SELECT COUNT(*) FROM applications WHERE app_status='submitted'").fetchone()[0]
-    if not apps and not pays and not failed and not review:
+    books_new = con.execute("SELECT reference, full_name, qty FROM book_orders WHERE created_at>=? ORDER BY id", (since_iso,)).fetchall()
+    books_ship = con.execute("SELECT COUNT(*) FROM book_orders WHERE status='paid'").fetchone()[0]
+    if not apps and not pays and not failed and not review and not books_new and not books_ship:
         return None
     lines = [f"Sažetak – Academia de la Vida ({date.today().strftime('%d. %m. %Y.')})", ""]
     lines.append(f"Nove prijave: {len(apps)}")
@@ -615,10 +634,130 @@ def digest(con, cfg, since_iso):
     for p in pays:
         k = {"membership": "članarina", "donation": "donacija"}.get(p["kind"], "nepoznato")
         lines.append(f"  · {p['booked_date']} {P.fmt_eur(p['amount_cents'])} {p['payer'] or ''} ({k}, {p['status']})")
-    lines += ["", f"Prijave koje čekaju odluku Upravnog odbora: {pending}",
+    if books_new:
+        lines.append(f"Nove narudžbe knjige uz donaciju: {len(books_new)}")
+        for b in books_new:
+            lines.append(f"  · {b['reference']} {b['full_name']} ({b['qty']} kom.)")
+    lines += ["", f"Knjige plaćene i spremne za slanje: {books_ship}",
+              f"Prijave koje čekaju odluku Upravnog odbora: {pending}",
               f"Uplate za pregled: {review}", f"Neposlane poruke: {failed}", "",
               f"Administracija: {cfg['BASE_URL']}/admin"]
     return "\n".join(lines)
+
+
+# ------------------------------------------------------------------ knjiga na dar uz donaciju
+
+BOOK_RE = re.compile(r"(?<![\d-])7-(\d{4})-(\d{4})(?![\d-])")
+PHONE_RE = re.compile(r"^\+?[\d\s/()-]{8,20}$")
+
+
+def book_offer_active(cfg, today=None):
+    until = cfg.get("BOOK_OFFER_UNTIL") or ""
+    return bool(until) and (today or date.today()).isoformat() <= until
+
+
+def validate_book(form, cfg, lang):
+    errs = []
+    d = {"lang": lang if lang in ("hr", "en") else "hr"}
+    d["full_name"] = " ".join(form.get("ime", "").split())[:120]
+    if len(d["full_name"]) < 3 or " " not in d["full_name"]:
+        errs.append("err_name")
+    d["email"] = form.get("email", "").strip().lower()[:200]
+    if not EMAIL_RE.match(d["email"]):
+        errs.append("err_email")
+    d["phone"] = " ".join(form.get("mobitel", "").split())[:30]
+    if not PHONE_RE.match(d["phone"]):
+        errs.append("err_phone")
+    d["locker"] = " ".join(form.get("paketomat", "").split())[:200]
+    if len(d["locker"]) < 3:
+        errs.append("err_locker")
+    try:
+        d["qty"] = int(form.get("kolicina", "1"))
+    except ValueError:
+        d["qty"] = 0
+    if not 1 <= d["qty"] <= cfg["BOOK_MAX_QTY"]:
+        errs.append("err_qty")
+        d["qty"] = 1
+    try:
+        d["amount_cents"] = parse_amount(form.get("iznos", ""))
+    except ValueError:
+        d["amount_cents"] = 0
+    if d["amount_cents"] < d["qty"] * cfg["BOOK_UNIT_CENTS"] or d["amount_cents"] > 1_000_000:
+        errs.append("err_book_amount")
+    if not form.get("privatnost"):
+        errs.append("err_privacy")
+    return d, errs
+
+
+def create_book_order(con, d, ip=None):
+    created_at = now_iso()
+    year = int(created_at[:4])
+    con.execute("BEGIN IMMEDIATE")
+    try:
+        seq = con.execute("SELECT COALESCE(MAX(seq),0)+1 FROM book_orders WHERE year=?", (year,)).fetchone()[0]
+        ref = f"7-{year}-{seq:04d}"
+        con.execute("""INSERT INTO book_orders(year, seq, reference, token, created_at, lang, full_name, email, phone,
+                       locker, qty, amount_cents, ip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (year, seq, ref, secrets.token_urlsafe(24), created_at, d["lang"], d["full_name"], d["email"],
+                     d["phone"], d["locker"], d["qty"], d["amount_cents"], ip))
+        oid = con.execute("SELECT last_insert_rowid()").fetchone()[0]
+        con.execute("COMMIT")
+    except Exception:
+        con.execute("ROLLBACK")
+        raise
+    return con.execute("SELECT * FROM book_orders WHERE id=?", (oid,)).fetchone()
+
+
+def book_rate_limited(con, ip, limit):
+    since = (datetime.now() - timedelta(hours=1)).astimezone().isoformat()
+    return con.execute("SELECT COUNT(*) FROM book_orders WHERE ip=? AND created_at>=?", (ip, since)).fetchone()[0] >= limit
+
+
+def book_pay_rows(cfg, o, lang):
+    t = i18n.T[lang]
+    pay = P.book_payment(cfg, o)
+    return pay, [[t["pay_amount"], P.fmt_eur(o["amount_cents"], lang),
+                  ("%d,%02d" if lang == "hr" else "%d.%02d") % divmod(o["amount_cents"], 100)],
+                 [t["pay_recipient"], f"{cfg['ORG_NAME']}, {cfg['ORG_STREET']}, {cfg['ORG_POSTCODE_CITY']}", None],
+                 [t["pay_iban"], cfg["ORG_IBAN"], None],
+                 [t["pay_model_ref"], f"HR00 {o['reference']}", None],
+                 [t["pay_desc"], pay["description"], None]]
+
+
+def queue_book_confirmation(con, cfg, o):
+    _pay, rows = book_pay_rows(cfg, o, o["lang"])
+    pay_txt = "\n".join(f"  {r[0]}: {r[1]}" for r in rows)
+    s, b = i18n.email_book_confirmation(o["lang"], o, pay_txt, P.fmt_eur(o["amount_cents"], o["lang"]))
+    return queue_email(con, "book_confirmation", o["email"], s, b, [{"kind": "book_hub3_png", "order_id": o["id"]}])
+
+
+def mark_book_paid(con, cfg, actor, order_id, booked_date, amount_cents, payment_id=None, source_txn=None):
+    """Evidentira uplatu za knjigu (ručno ili iz izvoda) i šalje zahvalu. Pozivatelj vodi transakciju."""
+    o = con.execute("SELECT * FROM book_orders WHERE id=?", (order_id,)).fetchone()
+    if not o or o["status"] != "pending":
+        return False
+    if payment_id is None:
+        fp = _fingerprint(source_txn, booked_date, amount_cents, o["reference"], o["full_name"], f"knjiga {order_id} ručno")
+        con.execute("""INSERT INTO payments(source, fingerprint, booked_date, amount_cents, payer, reference, description,
+                       kind, status, created_at, created_by) VALUES ('manual',?,?,?,?,?,?,'donation','matched',?,?)""",
+                    (fp, booked_date, amount_cents, o["full_name"], o["reference"], "Donacija – knjiga", now_iso(), actor))
+        payment_id = con.execute("SELECT last_insert_rowid()").fetchone()[0]
+    con.execute("UPDATE book_orders SET status='paid', paid_date=?, payment_id=? WHERE id=?", (booked_date, payment_id, order_id))
+    s, b = i18n.email_book_paid(o["lang"], o)
+    queue_email(con, "book_paid", o["email"], s, b)
+    audit(con, actor, "book_paid", o["reference"])
+    return True
+
+
+def mark_book_shipped(con, actor, order_id, tracking):
+    o = con.execute("SELECT * FROM book_orders WHERE id=?", (order_id,)).fetchone()
+    if not o or o["status"] != "paid":
+        return False
+    con.execute("UPDATE book_orders SET status='shipped', shipped_at=?, tracking=? WHERE id=?", (now_iso(), tracking, order_id))
+    s, b = i18n.email_book_shipped(o["lang"], o, tracking)
+    queue_email(con, "book_shipped", o["email"], s, b)
+    audit(con, actor, "book_shipped", f"{o['reference']} {tracking}")
+    return True
 
 
 # ------------------------------------------------------------------ sigurnosna kopija

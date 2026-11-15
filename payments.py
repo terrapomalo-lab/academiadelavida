@@ -180,6 +180,32 @@ def donation_payment(cfg, amount_cents):
     return data
 
 
+def book_payment(cfg, order):
+    """Donacija uz knjigu: HR00 s pozivom na broj narudžbe, da se uplata može automatski povezati."""
+    desc = "Donacija – knjiga Pomalo"
+    data = {
+        "kind": "donation",
+        "amount_cents": order["amount_cents"],
+        "payer_name": order["full_name"],
+        "recipient_name": cfg["ORG_NAME"],
+        "recipient_street": cfg["ORG_STREET"],
+        "recipient_city": cfg["ORG_POSTCODE_CITY"],
+        "iban": cfg["ORG_IBAN"],
+        "bic": cfg["ORG_BIC"],
+        "model": "HR00",
+        "reference": order["reference"],
+        "purpose": "CHAR",
+        "description": desc,
+    }
+    data["hub3"] = hub3_payload(**{k: data[k] for k in (
+        "amount_cents", "payer_name", "recipient_name", "recipient_street", "recipient_city",
+        "iban", "model", "reference", "purpose", "description")})
+    data["epc"] = epc_payload(amount_cents=order["amount_cents"], recipient_name=cfg["ORG_NAME"],
+                              iban=cfg["ORG_IBAN"], bic=cfg["ORG_BIC"],
+                              remittance=f"HR00 {order['reference']} {desc}", purpose="CHAR")
+    return data
+
+
 def membership_reference(app_row, period_index):
     """Poziv na broj, model HR00: GODINA-REDNI BROJ-RAZDOBLJE, npr. 2026-0007-1."""
     return f"{app_row['year']}-{app_row['seq']:04d}-{period_index}"

@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+{% block title %}Knjige{% endblock %}
+{% block main %}
+<h1>Knjige uz donaciju</h1>
+<p class="muted">Kad donacija stigne (uvoz izvoda s pozivom na broj 7-…, ili ručno ovdje), donator dobiva zahvalu, a zahtjev prelazi u „za slanje“. Pošiljku izradite u BOX NOW-u za navedeni paketomat, zatim ovdje upišite broj pošiljke i kliknite „Poslano“ – donator dobiva obavijest.</p>
+{% set groups = [('paid','Plaćeno – za slanje'),('pending','Čeka uplatu'),('shipped','Poslano'),('cancelled','Otkazano')] %}
+{% for st, label in groups %}
+{% set rows = orders|selectattr('status','equalto',st)|list %}
+<h2>{{ label }} ({{ rows|length }})</h2>
+{% if not rows %}<p class="muted">Nema.</p>{% else %}
+<div class="tbl"><table>
+<thead><tr><th>Poziv na broj</th><th>Zaprimljeno</th><th>Donator</th><th>Kontakt</th><th>BOX NOW paketomat</th><th>Kom.</th><th>Donacija</th><th>Radnja</th></tr></thead>
+<tbody>{% for o in rows %}
+<tr>
+  <td>{{ o.reference }}</td><td>{{ o.created_at[:10] }}</td><td>{{ o.full_name }}</td>
+  <td>{{ o.email }}<br>{{ o.phone }}</td><td>{{ o.locker }}</td><td class="num">{{ o.qty }}</td><td class="num">{{ fmt_eur(o.amount_cents) }}</td>
+  <td>
+  {% if st == 'pending' %}
+    <form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="order_id" value="{{ o.id }}">
+      <div><label>Datum</label><input type="date" name="date" value="{{ today }}" required></div>
+      <div><label>Iznos</label><input name="amount" value="{{ '%d,%02d' % (o.amount_cents // 100, o.amount_cents % 100) }}" size="7" required></div>
+      <div><button class="btn sm" name="action" value="paid">Uplata stigla</button></div>
+    </form>
+    <form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="order_id" value="{{ o.id }}"><button class="btn sec sm" name="action" value="cancel">Otkaži</button></form>
+  {% elif st == 'paid' %}
+    <span class="muted">Plaćeno {{ o.paid_date }}</span>
+    <form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="order_id" value="{{ o.id }}">
+      <div><label>Broj pošiljke (BOX NOW)</label><input name="tracking" size="14"></div>
+      <div><button class="btn sm" name="action" value="shipped">Poslano</button></div>
+    </form>
+  {% elif st == 'shipped' %}
+    <span class="muted">{{ o.shipped_at[:10] }}{% if o.tracking %} · {{ o.tracking }}{% endif %}</span>
+  {% endif %}
+  </td>
+</tr>{% endfor %}</tbody></table></div>{% endif %}
+{% endfor %}
+{% endblock %}
