@@ -67,7 +67,7 @@ class Config:
         "capacity": 100,
         "reg_until": "2026-11-26",     # zadnji dan prijava
         "book_until": "2026-11-25",    # rok za uplatu i predbilježbu knjige s posvetom
-        "book_cents": int(_env("ADV_EVENT_BOOK_CENTS", "3990")),   # donacija po primjerku – POTVRDITI
+        "book_cents": int(_env("ADV_EVENT_BOOK_CENTS", "3500")),   # donacija po primjerku (35 €)
         "max_copies": 10,
         "remind_days_before": 2,
     }
