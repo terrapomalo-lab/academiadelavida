@@ -225,7 +225,7 @@ def fmt_date(iso, lang="hr"):
 
 # ---------------------------------------------------------------- PDF obavijest
 
-def notice_pdf(cfg, pay, lang, *, member_name=None, public_no=None, period=None, due_date=None):
+def notice_pdf(cfg, pay, lang, *, member_name=None, public_no=None, period=None, due_date=None, title=None, name_label=None, no_label=None):
     """Obavijest za uplatu (članarina) ili uplatnica za donaciju, s HUB3 i EPC kodom."""
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -265,7 +265,9 @@ def notice_pdf(cfg, pay, lang, *, member_name=None, public_no=None, period=None,
     y -= 12 * mm
 
     c.setFont("AdvSansB", 15)
-    if pay["kind"] == "membership":
+    if title:
+        pass
+    elif pay["kind"] == "membership":
         title = "Obavijest o uplati članarine" if hr else "Membership fee payment notice"
     else:
         title = "Podaci za donaciju" if hr else "Donation payment details"
@@ -273,6 +275,8 @@ def notice_pdf(cfg, pay, lang, *, member_name=None, public_no=None, period=None,
     y -= 10 * mm
 
     rows = []
+    if pay["kind"] != "membership" and (member_name or public_no or due_date):
+        rows += [(name_label or "Donator", member_name), (no_label or "Broj", public_no), ("Rok za uplatu", due_date)]
     if pay["kind"] == "membership":
         rows += [
             ("Član" if hr else "Member", member_name),

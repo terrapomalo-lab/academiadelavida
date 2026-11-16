@@ -477,9 +477,16 @@ def import_statement(con, cfg, actor, file_bytes):
             continue
         kind, status, due_id, reason = "unknown", "review", None, None
         book = None
-        bm = BOOK_RE.search(ref) or BOOK_RE.search(desc)
-        m = None if bm else (REF_RE.search(ref) or REF_RE.search(desc))
-        if bm:
+        import events as E
+        evreg, evreason, evhit = E.match_statement(con, ref, desc, amt)
+        bm = None if evhit else (BOOK_RE.search(ref) or BOOK_RE.search(desc))
+        m = None if (bm or evhit) else (REF_RE.search(ref) or REF_RE.search(desc))
+        if evhit:
+            if evreg is not None:
+                kind, status, ref = "donation", "matched", evreg["reference"]
+            else:
+                reason = evreason
+        elif bm:
             book = con.execute("SELECT * FROM book_orders WHERE reference=?", (bm.group(0),)).fetchone()
             if not book:
                 reason = f"Poziv na broj {bm.group(0)} ne odgovara nijednoj narudžbi knjige."
@@ -532,6 +539,9 @@ def import_statement(con, cfg, actor, file_bytes):
                 if book is not None:
                     mark_book_paid(con, cfg, actor, book["id"], bdate, amt, payment_id=pid)
                     res["books"] = res.get("books", 0) + 1
+                if evhit and evreg is not None:
+                    E.mark_paid(con, cfg, actor, evreg, bdate, amt, payment_id=pid)
+                    res["event_books"] = res.get("event_books", 0) + 1
             elif status == "prepaid":
                 res["prepaid"] += 1
             else:

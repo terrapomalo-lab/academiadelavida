@@ -218,6 +218,8 @@ def init_db(path):
     path.parent.mkdir(parents=True, exist_ok=True)
     con = connect(path)
     con.executescript(SCHEMA)
+    import events   # tablice za predstavljanje knjige
+    events.ensure_schema(con)
     con.close()
 
 

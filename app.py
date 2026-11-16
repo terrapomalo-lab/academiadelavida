@@ -19,6 +19,7 @@ import i18n
 import mailer
 import payments as P
 import services as S
+import events as E
 from config import Config
 
 
@@ -87,6 +88,93 @@ def create_app(overrides=None):
     @app.get("/en")
     def index_en_noslash():
         return redirect(url_for("index_en"), 301)
+
+    # ------------------------------------------------------------ predstavljanje knjige
+    @app.get("/predstavljanje")
+    def event_page():
+        con = DB.get_db()
+        return render_template("event.html", t=i18n.T["hr"], lang="hr", alt_url=url_for("index_en"), e=cfg["EVENT"],
+                               reg_open=E.reg_open(cfg), books_open=E.books_open(cfg), left=E.seats_left(con, cfg))
+
+    @app.post("/api/predstavljanje")
+    def api_event():
+        con = DB.get_db()
+        if request.form.get("web"):
+            return jsonify({"ok": False, "message": "Prijava nije uspjela."}), 400
+        if not E.reg_open(cfg):
+            return jsonify({"ok": False, "message": "Prijave za predstavljanje su zatvorene."}), 410
+        if E.rate_limited(con, client_ip(), cfg["MAX_SUBMISSIONS_PER_IP_PER_HOUR"]):
+            return jsonify({"ok": False, "message": i18n.T["hr"]["err_rate"]}), 429
+        d, errs = E.validate(request.form, cfg)
+        if errs:
+            return jsonify({"ok": False, "message": "Molimo provjerite: " + "; ".join(errs) + "."}), 400
+        try:
+            r = E.create(con, cfg, d, ip=client_ip())
+        except Exception:
+            app.logger.exception("Spremanje prijave za predstavljanje nije uspjelo")
+            return jsonify({"ok": False, "message": i18n.T["hr"]["err_server"].replace("{email}", cfg["ORG_EMAIL"])}), 500
+        if r is None:
+            return jsonify({"ok": False, "message": "S ovom e-mail adresom već postoji prijava. Potvrdu s poveznicom za odjavu "
+                                                    "poslali smo vam e-mailom; za izmjene nam pišite na " + cfg["ORG_EMAIL"] + "."}), 409
+        try:
+            mailer.send_outbox(con, cfg, batch=5, include_failed=False)
+        except Exception:
+            app.logger.exception("Potvrda za predstavljanje nije poslana; prijava je spremljena")
+        if r["status"] == "confirmed":
+            title, paras = "Prijava je potvrđena", [f"Vaše mjesto je potvrđeno (broj prijave {r['reference']})"
+                                                     + (" za vas i još jednu osobu." if r["seats"] == 2 else ".")]
+        else:
+            title, paras = "Na listi ste čekanja", ["Sva su mjesta trenutačno popunjena. Ako se netko odjavi, mjesto automatski "
+                                                    "dobivate redom prijave i javljamo vam e-mailom."]
+        paras.append(f"Potvrdu s poveznicom za odjavu poslali smo na {r['email']}.")
+        out = {"ok": True, "status": r["status"], "title": title, "paragraphs": paras}
+        if r["book_qty"]:
+            paras.append(f"Predbilježba knjige s posvetom: {r['book_qty']} kom. Uplatite donaciju do "
+                         f"{P.fmt_date(cfg['EVENT']['book_until'], 'hr')}; knjigu preuzimate na predstavljanju.")
+            out["pay"] = {"title": "Uplata za knjigu s posvetom", "rows": E.pay_rows(cfg, r),
+                          "hub3": url_for("event_hub3", token=r["token"]), "hub3_dl": url_for("event_hub3", token=r["token"], dl=1),
+                          "epc": url_for("event_epc", token=r["token"]), "pdf": url_for("event_pdf", token=r["token"]), "page": None}
+        return jsonify(out), 200
+
+    def _evreg(token):
+        r = E.by_token(DB.get_db(), token)
+        if not r:
+            abort(404)
+        return r
+
+    @app.get("/pr/<token>/hub3.png")
+    def event_hub3(token):
+        r = _evreg(token)
+        return _png(P.hub3_png(E.payment(cfg, r)["hub3"], scale=4), f"kod-{r['reference']}.png", request.args.get("dl") == "1")
+
+    @app.get("/pr/<token>/epc.png")
+    def event_epc(token):
+        r = _evreg(token)
+        return _png(P.epc_png(E.payment(cfg, r)["epc"]), f"epc-{r['reference']}.png", request.args.get("dl") == "1")
+
+    @app.get("/pr/<token>/uplatnica.pdf")
+    def event_pdf(token):
+        r = _evreg(token)
+        return send_file(io.BytesIO(E.pdf(cfg, r)), mimetype="application/pdf", as_attachment=True,
+                         download_name=f"uplatnica-{r['reference']}.pdf")
+
+    @app.route("/predstavljanje/odjava/<token>", methods=["GET", "POST"])
+    def event_cancel(token):
+        con = DB.get_db()
+        r = _evreg(token)
+        done = False
+        if request.method == "POST" and r["status"] != "cancelled":
+            con.execute("BEGIN IMMEDIATE")
+            try:
+                E.cancel(con, cfg, r, "web")
+                con.execute("COMMIT")
+            except Exception:
+                con.execute("ROLLBACK")
+                raise
+            mailer.send_outbox(con, cfg, batch=10, include_failed=False)
+            r, done = E.by_token(con, token), True
+        return render_template("event_cancel.html", t=i18n.T["hr"], lang="hr", alt_url=url_for("index_en"), e=cfg["EVENT"],
+                               r=r, done=done, names=E.dedications(con, r["id"]))
 
     @app.get("/knjiga")
     def book_hr():
@@ -629,6 +717,106 @@ def create_app(overrides=None):
             return redirect(url_for("admin_member", app_id=a["id"]))
         return render_template("admin/member_new.html", f={})
 
+    # --- predstavljanje knjige
+    def _event_lists(con):
+        key = cfg["EVENT"]["key"]
+        regs = con.execute("SELECT * FROM event_regs WHERE event=? ORDER BY full_name COLLATE NOCASE", (key,)).fetchall()
+        ded = {r["id"]: E.dedications(con, r["id"]) for r in regs}
+        confirmed = [r for r in regs if r["status"] == "confirmed"]
+        waitlist = sorted([r for r in regs if r["status"] == "waitlist"], key=lambda r: r["id"])
+        dedrows = sorted([(n, r) for r in regs if r["book_qty"] and r["book_status"] != "cancelled" for n in ded[r["id"]]],
+                         key=lambda x: x[0].lower())
+        return regs, ded, confirmed, waitlist, dedrows
+
+    @app.route("/admin/predstavljanje", methods=["GET", "POST"])
+    @admin_required
+    def admin_event():
+        con = DB.get_db()
+        if request.method == "POST":
+            r = E.get(con, int(request.form.get("reg_id", "0") or 0))
+            action = request.form.get("action")
+            if not r:
+                abort(404)
+            con.execute("BEGIN IMMEDIATE")
+            try:
+                if action == "paid":
+                    try:
+                        bdate, amt = S.parse_date(request.form.get("date", "")), S.parse_amount(request.form.get("amount", ""))
+                    except ValueError:
+                        con.execute("ROLLBACK")
+                        flash("Upišite datum i iznos uplate.", "err")
+                        return redirect(url_for("admin_event"))
+                    ok = E.mark_paid(con, cfg, g.admin, r, bdate, amt)
+                    msg = "Uplata je evidentirana; donator je dobio potvrdu. Knjigu možete potpisati." if ok else "Predbilježba nije u stanju „čeka uplatu“."
+                elif action == "cancel":
+                    prom = E.cancel(con, cfg, r, g.admin)
+                    ok, msg = True, "Prijava je odjavljena." + (f" Mjesto je dobio/la: {', '.join(p['full_name'] for p in prom)}." if prom else "")
+                else:
+                    ok, msg = False, "Nepoznata radnja."
+                con.execute("COMMIT")
+            except Exception:
+                con.execute("ROLLBACK")
+                raise
+            if ok:
+                mailer.send_outbox(con, cfg, batch=10)
+            flash(msg, "ok" if ok else "err")
+            return redirect(url_for("admin_event"))
+        regs, ded, confirmed, waitlist, dedrows = _event_lists(con)
+        return render_template("admin/event.html", e=cfg["EVENT"], confirmed=confirmed, waitlist=waitlist, dedrows=dedrows, ded=ded,
+                               cancelled=[r for r in regs if r["status"] == "cancelled"], taken=E.seats_taken(con, cfg),
+                               fmt_eur=P.fmt_eur, today=date.today().isoformat(),
+                               public_url=cfg["BASE_URL"] + url_for("event_page"))
+
+    @app.get("/admin/predstavljanje/ispis/<which>")
+    @admin_required
+    def admin_event_print(which):
+        if which not in ("ulaz", "knjige", "cekanje"):
+            abort(404)
+        regs, ded, confirmed, waitlist, dedrows = _event_lists(DB.get_db())
+        return render_template("admin/event_print.html", which=which, e=cfg["EVENT"], confirmed=confirmed, waitlist=waitlist,
+                               dedrows=dedrows, fmt_eur=P.fmt_eur)
+
+    @app.get("/admin/predstavljanje/izvoz.xlsx")
+    @admin_required
+    def admin_event_xlsx():
+        from openpyxl import Workbook
+        con = DB.get_db()
+        regs, ded, confirmed, waitlist, dedrows = _event_lists(con)
+        st = {"none": "", "pending": "čeka uplatu", "paid": "plaćeno", "cancelled": "otkazano"}
+        sheets = [
+            ("Ulaz", ["Ime i prezime", "Broj osoba", "Broj prijave", "E-mail", "Mobitel", "Knjige", "Uplata"],
+             [[r["full_name"], r["seats"], r["reference"], r["email"], r["phone"], r["book_qty"] or "", st[r["book_status"]]] for r in confirmed]),
+            ("Lista čekanja", ["Redni broj", "Ime i prezime", "Broj osoba", "Broj prijave", "E-mail", "Mobitel", "Prijavljeno"],
+             [[i, r["full_name"], r["seats"], r["reference"], r["email"], r["phone"], r["created_at"][:16]] for i, r in enumerate(waitlist, 1)]),
+            ("Posvete", ["Ime za posvetu", "Naručitelj", "Primjeraka (ukupno)", "Poziv na broj", "Iznos (€)", "Status uplate", "Prijava"],
+             [[n, r["full_name"], r["book_qty"], "HR00 " + r["reference"], r["book_cents"] / 100, st[r["book_status"]],
+               {"confirmed": "dolazi", "waitlist": "lista čekanja", "cancelled": "odjavljen/a"}[r["status"]]] for n, r in dedrows]),
+        ]
+        wb = Workbook()
+        wb.remove(wb.active)
+        for title, head, rows in sheets:
+            ws = wb.create_sheet(title)
+            ws.append(head)
+            for row in rows:
+                ws.append(row)
+            for col in ws.columns:
+                ws.column_dimensions[col[0].column_letter].width = min(45, max(10, max(len(str(c.value or "")) for c in col) + 2))
+        DB.audit(con, g.admin, "export", "predstavljanje.xlsx")
+        out = io.BytesIO()
+        wb.save(out)
+        out.seek(0)
+        return send_file(out, as_attachment=True, download_name=f"predstavljanje-{date.today().isoformat()}.xlsx",
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    @app.get("/admin/predstavljanje/qr.png")
+    @admin_required
+    def admin_event_qr():
+        import qrcode
+        img = qrcode.make(cfg["BASE_URL"] + url_for("event_page"), box_size=20, border=2)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return _png(buf.getvalue(), "qr-predstavljanje.png", True)
+
     # --- knjige uz donaciju
     @app.route("/admin/knjige", methods=["GET", "POST"])
     @admin_required
@@ -857,6 +1045,8 @@ def create_app(overrides=None):
         """Dnevno: obnove i podsjetnici, sažetak za Upravni odbor."""
         con = DB.connect(cfg["DB_PATH"])
         n = S.run_renewals(con, cfg)
+        E.run_reminders(con, cfg)
+        E.purge_old(con, cfg)
         since = (datetime.now() - timedelta(days=1)).astimezone().replace(microsecond=0).isoformat()
         text = S.digest(con, cfg, since)
         if text and cfg["DIGEST_TO"]:

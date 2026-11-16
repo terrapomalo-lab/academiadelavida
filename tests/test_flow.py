@@ -578,3 +578,100 @@ def test_admin_notices(env):
     rows = con.execute("SELECT to_addr, subject FROM outbox WHERE kind='notice' ORDER BY id").fetchall()
     assert len(rows) == 2 and all(r[0] == app.config["NOTIFY_TO"] for r in rows)
     assert rows[0][1].startswith("Nova prijava ADV-") and rows[1][1].startswith("Nova narudžba knjige 7-")
+
+
+# ------------------------------------------------------------------ predstavljanje knjige
+import events as E
+from datetime import date as _date, timedelta as _td
+from werkzeug.datastructures import MultiDict
+
+
+def ev_setup(app, **kw):
+    e = dict(app.config["EVENT"])
+    t = _date.today()
+    e.update(date=(t + _td(days=10)).isoformat(), reg_until=(t + _td(days=5)).isoformat(),
+             book_until=(t + _td(days=4)).isoformat(), book_cents=3990)
+    e.update(kw)
+    app.config["EVENT"] = e
+    return e
+
+
+def ev_form(names=(), **kw):
+    d = MultiDict({"ime": "Iva Ivić", "email": "iva@example.com", "mobitel": "091 111 2222", "dolazak": "1",
+                   "primjerci": str(len(names)), "privatnost": "1"})
+    for n in names:
+        d.add("posveta", n)
+    for k, v in kw.items():
+        d[k] = v
+    return d
+
+
+def test_event_registration_with_books(env):
+    app, c, con = env
+    ev_setup(app)
+    assert "Prijava dolaska" in c.get("/predstavljanje").get_data(as_text=True)
+    r = c.post("/api/predstavljanje", data=ev_form(names=["Mama", "Ana"]))
+    assert r.status_code == 200 and r.json["status"] == "confirmed" and "pay" in r.json
+    reg = con.execute("SELECT * FROM event_regs").fetchone()
+    assert reg["reference"].startswith("8-") and reg["book_cents"] == 7980 and reg["book_status"] == "pending"
+    assert [x[0] for x in con.execute("SELECT name FROM event_dedications ORDER BY pos")] == ["Mama", "Ana"]
+    for u in ("hub3", "epc", "pdf"):
+        assert c.get(r.json["pay"][u]).status_code == 200
+    body = con.execute("SELECT body_text FROM outbox WHERE kind='event_confirmation'").fetchone()[0]
+    assert "/predstavljanje/odjava/" in body and reg["reference"] in body and "Mama" in body
+    assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='notice'").fetchone()[0] == 1
+    # dvostruka prijava istim e-mailom
+    assert c.post("/api/predstavljanje", data=ev_form()).status_code == 409
+    # nedostaje ime za posvetu
+    r = c.post("/api/predstavljanje", data=ev_form(names=["X"], email="b@example.com", primjerci="2"))
+    assert r.status_code == 400 and "posvetu" in r.json["message"]
+    # uplata s izvoda
+    csv_ = f"datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije\n2026-11-20;79,80;Iva;HR00 {reg['reference']};;T-E1\n"
+    res = S.import_statement(con, app.config, "test", csv_.encode())
+    assert res.get("event_books") == 1
+    assert con.execute("SELECT book_status FROM event_regs").fetchone()[0] == "paid"
+    assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='event_book_paid'").fetchone()[0] == 1
+
+
+def test_event_capacity_waitlist_and_promotion(env):
+    app, c, con = env
+    ev_setup(app, capacity=3)
+    a = c.post("/api/predstavljanje", data=ev_form(email="a@example.com", dolazak="2")).json
+    b = c.post("/api/predstavljanje", data=ev_form(email="b@example.com", dolazak="2")).json
+    d = c.post("/api/predstavljanje", data=ev_form(email="d@example.com")).json
+    assert (a["status"], b["status"], d["status"]) == ("confirmed", "waitlist", "waitlist")
+    assert E.seats_taken(con, app.config) == 2
+    tok = con.execute("SELECT token FROM event_regs WHERE email='a@example.com'").fetchone()[0]
+    assert "Da, odjavljujem se" in c.get(f"/predstavljanje/odjava/{tok}").get_data(as_text=True)
+    c.post(f"/predstavljanje/odjava/{tok}")
+    st = dict(con.execute("SELECT email, status FROM event_regs").fetchall())
+    assert st == {"a@example.com": "cancelled", "b@example.com": "confirmed", "d@example.com": "confirmed"}
+    assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='event_promoted'").fetchone()[0] == 2
+    assert E.seats_taken(con, app.config) == 3
+
+
+def test_event_reminder_deadline_and_admin(env):
+    app, c, con = env
+    e = ev_setup(app)
+    c.post("/api/predstavljanje", data=ev_form(names=["Teta Mira"]))
+    assert E.run_reminders(con, app.config, today=_date.fromisoformat(e["date"]) - _td(days=3)) == 0
+    assert E.run_reminders(con, app.config, today=_date.fromisoformat(e["date"]) - _td(days=2)) == 1
+    assert E.run_reminders(con, app.config, today=_date.fromisoformat(e["date"]) - _td(days=2)) == 0
+    tok = login(c)
+    html = c.get("/admin/predstavljanje").get_data(as_text=True)
+    assert "Iva Ivić" in html and "Teta Mira" in html and "Zauzeto mjesta: 1 / 100" in html
+    rid = con.execute("SELECT id FROM event_regs").fetchone()[0]
+    c.post("/admin/predstavljanje", data={"csrf": tok, "reg_id": rid, "action": "paid", "date": "2026-11-21", "amount": "39,90"})
+    assert con.execute("SELECT book_status FROM event_regs").fetchone()[0] == "paid"
+    for w in ("ulaz", "knjige", "cekanje"):
+        assert c.get(f"/admin/predstavljanje/ispis/{w}").status_code == 200
+    x = c.get("/admin/predstavljanje/izvoz.xlsx")
+    assert x.status_code == 200 and x.data[:2] == b"PK"
+    assert c.get("/admin/predstavljanje/qr.png").data[:4] == b"\x89PNG"
+    # rokovi
+    ev_setup(app, book_until=(_date.today() - _td(days=1)).isoformat())
+    r = c.post("/api/predstavljanje", data=ev_form(names=["Netko"], email="late@example.com"))
+    assert r.status_code == 200 and "pay" not in r.json
+    ev_setup(app, reg_until=(_date.today() - _td(days=1)).isoformat())
+    assert c.post("/api/predstavljanje", data=ev_form(email="x@example.com")).status_code == 410
+    assert E.purge_old(con, app.config, today=_date.fromisoformat(e["date"]) + _td(days=91)) == 2

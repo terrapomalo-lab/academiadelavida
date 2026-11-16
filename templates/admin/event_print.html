@@ -1,0 +1,21 @@
+<!doctype html><html lang="hr"><head><meta charset="utf-8"><title>Ispis – predstavljanje</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='print.css') }}"></head><body>
+<h1>{% if which == 'ulaz' %}Stol na ulazu{% elif which == 'knjige' %}Preuzimanje knjiga s posvetom{% else %}Lista čekanja{% endif %}</h1>
+<p>Predstavljanje knjige POMALO · {{ fmt_date(e.date, 'hr') }} u {{ e.time }} · HAZU</p>
+{% if which == 'ulaz' %}
+<p>Prijava: {{ confirmed|length }} · osoba: {{ confirmed|sum(attribute='seats') }}</p>
+<table><thead><tr><th>✓</th><th>Ime i prezime</th><th>Osoba</th><th>Broj prijave</th><th>Knjiga</th></tr></thead><tbody>
+{% for r in confirmed %}<tr><td class="box"></td><td>{{ r.full_name }}</td><td>{{ r.seats }}</td><td>{{ r.reference }}</td><td>{% if r.book_qty %}{{ r.book_qty }} ({{ 'plaćeno' if r.book_status == 'paid' else 'NIJE PLAĆENO' }}){% endif %}</td></tr>{% endfor %}
+</tbody></table>
+{% elif which == 'knjige' %}
+<table><thead><tr><th>✓</th><th>Ime za posvetu</th><th>Naručitelj</th><th>Poziv na broj</th><th>Uplata</th></tr></thead><tbody>
+{% for n, r in dedrows %}<tr><td class="box"></td><td><strong>{{ n }}</strong></td><td>{{ r.full_name }}{{ ' (odjavljen/a)' if r.status == 'cancelled' }}</td><td>{{ r.reference }}</td><td>{{ 'plaćeno' if r.book_status == 'paid' else 'NIJE PLAĆENO' }}</td></tr>{% endfor %}
+</tbody></table>
+{% else %}
+<table><thead><tr><th>#</th><th>Ime i prezime</th><th>Osoba</th><th>Mobitel</th><th>Broj prijave</th></tr></thead><tbody>
+{% for r in waitlist %}<tr><td>{{ loop.index }}</td><td>{{ r.full_name }}</td><td>{{ r.seats }}</td><td>{{ r.phone }}</td><td>{{ r.reference }}</td></tr>{% endfor %}
+</tbody></table>
+{% endif %}
+<p class="noprint"><button id="print-btn" type="button">Ispiši</button></p>
+<script src="{{ url_for('static', filename='print.js') }}"></script>
+</body></html>

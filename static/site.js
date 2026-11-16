@@ -140,6 +140,44 @@
     });
   }
 
+  // ---------------------------------------------------------------- predstavljanje knjige
+  var ef = document.getElementById("ev-form");
+  if (ef) {
+    var EM = JSON.parse(ef.getAttribute("data-msg"));
+    var ecents = +ef.getAttribute("data-cents");
+    var eqty = document.getElementById("e-qty"), enames = document.getElementById("e-names"), etot = document.getElementById("e-total");
+    var eerr = document.getElementById("ev-err"), eok = document.getElementById("ev-ok"), ebtn = document.getElementById("ev-btn");
+    var drawNames = function () {
+      var n = +eqty.value, old = [].map.call(enames.querySelectorAll("input"), function (i) { return i.value; });
+      enames.innerHTML = "";
+      for (var i = 1; i <= n; i++) {
+        var f = el("div", "field"), id = "e-ded-" + i;
+        var lab = el("label", null, n === 1 ? "Ime za posvetu" : "Ime za posvetu – " + i + ". primjerak"); lab.setAttribute("for", id);
+        var inp = el("input"); inp.type = "text"; inp.id = id; inp.name = "posveta"; inp.required = true; inp.maxLength = 80; inp.value = old[i - 1] || "";
+        f.appendChild(lab); f.appendChild(inp); enames.appendChild(f);
+      }
+      if (n) { etot.textContent = "Ukupno za uplatu: " + (n * ecents / 100).toFixed(2).replace(".", ",") + " €"; etot.hidden = false; } else etot.hidden = true;
+    };
+    if (eqty) { eqty.addEventListener("change", drawNames); drawNames(); }
+    ef.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      eerr.hidden = true; ebtn.disabled = true; ebtn.textContent = EM.sending;
+      fetch(ef.getAttribute("data-api"), { method: "POST", body: new FormData(ef), headers: { "Accept": "application/json" } })
+        .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+        .then(function (res) {
+          if (res.status === 200 && res.j.ok) {
+            eok.innerHTML = "";
+            eok.appendChild(el("h3", null, res.j.title));
+            res.j.paragraphs.forEach(function (p) { eok.appendChild(el("p", null, p)); });
+            if (res.j.pay) renderPay(eok, res.j.pay, EM);
+            ef.hidden = true; eok.hidden = false; eok.focus(); eok.scrollIntoView({ block: "start" });
+          } else { eerr.textContent = res.j.message || EM.server; eerr.hidden = false; }
+        })
+        .catch(function () { eerr.textContent = EM.server; eerr.hidden = false; })
+        .then(function () { ebtn.disabled = false; ebtn.textContent = EM.submit; });
+    });
+  }
+
   // ---------------------------------------------------------------- donacija
   var don = document.getElementById("don");
   if (don) {

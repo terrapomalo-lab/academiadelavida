@@ -58,6 +58,19 @@ class Config:
     BOOK_UNIT_CENTS = BOOK_PRICE_CENTS + BOOK_SHIP_CENTS   # najmanja donacija za 1 knjigu (42,90 €)
     BOOK_MAX_QTY = 5
     BOOK_COVER = "img/knjiga-naslovnica.jpg"
+    # Predstavljanje knjige POMALO (prijave na /predstavljanje)
+    EVENT = {
+        "key": "pomalo-2026-11-30",
+        "title": "POMALO – Mediteransko umijeće življenja",
+        "date": "2026-11-30", "weekday": "ponedjeljak", "time": "13:30",
+        "place": "Velika sjednička dvorana HAZU, Trg Nikole Šubića Zrinskog 11, Zagreb",
+        "capacity": 100,
+        "reg_until": "2026-11-26",     # zadnji dan prijava
+        "book_until": "2026-11-25",    # rok za uplatu i predbilježbu knjige s posvetom
+        "book_cents": int(_env("ADV_EVENT_BOOK_CENTS", "3990")),   # donacija po primjerku – POTVRDITI
+        "max_copies": 10,
+        "remind_days_before": 2,
+    }
     FEE_STANDARD_EUR = 50         # stara cijena, koristi se samo ako je FEES_V2_FROM postavljen
     FEE_STUDENT_EUR = 20
 

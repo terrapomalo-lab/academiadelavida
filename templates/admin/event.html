@@ -1,0 +1,44 @@
+{% extends "admin/base.html" %}
+{% block title %}Predstavljanje{% endblock %}
+{% block main %}
+<h1>Predstavljanje knjige · {{ fmt_date(e.date, 'hr') }} u {{ e.time }}</h1>
+<p><strong>Zauzeto mjesta: {{ taken }} / {{ e.capacity }}</strong> · na listi čekanja: {{ waitlist|length }} · predbilježenih primjeraka s posvetom: {{ dedrows|length }}</p>
+<p class="muted">Poveznica za prijavu: <a href="{{ public_url }}" target="_blank">{{ public_url }}</a> ·
+  <a href="{{ url_for('admin_event_qr') }}">Preuzmi QR kod (PNG)</a> ·
+  <a href="{{ url_for('admin_event_xlsx') }}">Izvoz u Excel (sva tri popisa)</a></p>
+<p class="muted">Ispis: <a href="{{ url_for('admin_event_print', which='ulaz') }}" target="_blank">stol na ulazu</a> ·
+  <a href="{{ url_for('admin_event_print', which='knjige') }}" target="_blank">stol za preuzimanje knjiga</a> ·
+  <a href="{{ url_for('admin_event_print', which='cekanje') }}" target="_blank">lista čekanja</a></p>
+
+<h2>Dolaze ({{ confirmed|length }} prijava, {{ taken }} osoba)</h2>
+{% if not confirmed %}<p class="muted">Još nema prijava.</p>{% else %}
+<div class="tbl"><table><thead><tr><th>Ime i prezime</th><th>Osoba</th><th>Broj</th><th>Kontakt</th><th>Knjige</th><th>Radnja</th></tr></thead><tbody>
+{% for r in confirmed %}<tr><td>{{ r.full_name }}</td><td class="num">{{ r.seats }}</td><td>{{ r.reference }}</td><td>{{ r.email }}<br>{{ r.phone }}</td>
+<td>{% if r.book_qty %}{{ r.book_qty }} · {{ 'plaćeno' if r.book_status == 'paid' else 'čeka uplatu' if r.book_status == 'pending' else 'otkazano' }}{% endif %}</td>
+<td><form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="reg_id" value="{{ r.id }}"><button class="btn sec sm" name="action" value="cancel">Odjavi</button></form></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+
+<h2>Lista čekanja ({{ waitlist|length }})</h2>
+<p class="muted">Kad se netko odjavi, mjesto automatski dobiva prvi s ovog popisa za koga ima dovoljno mjesta, i dobiva e-mail.</p>
+{% if not waitlist %}<p class="muted">Nema.</p>{% else %}
+<div class="tbl"><table><thead><tr><th>#</th><th>Ime i prezime</th><th>Osoba</th><th>Broj</th><th>Kontakt</th><th>Prijavljeno</th><th>Radnja</th></tr></thead><tbody>
+{% for r in waitlist %}<tr><td>{{ loop.index }}</td><td>{{ r.full_name }}</td><td class="num">{{ r.seats }}</td><td>{{ r.reference }}</td><td>{{ r.email }}<br>{{ r.phone }}</td><td>{{ r.created_at[:16]|replace('T', ' ') }}</td>
+<td><form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="reg_id" value="{{ r.id }}"><button class="btn sec sm" name="action" value="cancel">Ukloni</button></form></td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+
+<h2>Posvete ({{ dedrows|length }} primjeraka)</h2>
+<p class="muted">Knjigu potpišite tek kad je uplata označena kao primljena. Uplate s izvoda (poziv na broj 8-…) povezuju se same.</p>
+{% if not dedrows %}<p class="muted">Nema predbilježbi.</p>{% else %}
+<div class="tbl"><table><thead><tr><th>Ime za posvetu</th><th>Naručitelj</th><th>Primjeraka</th><th>Poziv na broj</th><th>Iznos</th><th>Uplata</th></tr></thead><tbody>
+{% for n, r in dedrows %}<tr><td><strong>{{ n }}</strong></td><td>{{ r.full_name }}{% if r.status == 'cancelled' %} <span class="pill p-mute">odjavljen/a</span>{% elif r.status == 'waitlist' %} <span class="pill p-info">lista čekanja</span>{% endif %}</td>
+<td class="num">{{ r.book_qty }}</td><td>HR00 {{ r.reference }}</td><td class="num">{{ fmt_eur(r.book_cents) }}</td>
+<td>{% if r.book_status == 'paid' %}<span class="pill p-paid">plaćeno {{ r.book_paid_date }}</span>
+{% else %}<form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="reg_id" value="{{ r.id }}">
+<div><input type="date" name="date" value="{{ today }}" aria-label="Datum uplate" required></div>
+<div><input name="amount" value="{{ '%d,%02d' % (r.book_cents // 100, r.book_cents % 100) }}" size="7" aria-label="Iznos" required></div>
+<div><button class="btn sm" name="action" value="paid">Uplata primljena</button></div></form>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>{% endif %}
+
+{% if cancelled %}<h2>Odjavljeni ({{ cancelled|length }})</h2>
+<p class="muted">{% for r in cancelled %}{{ r.full_name }} ({{ r.reference }}){{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+{% endblock %}

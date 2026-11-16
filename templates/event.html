@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Predstavljanje knjige POMALO · Academia de la Vida{% endblock %}
+{% block desc %}Predstavljanje knjige POMALO – Mediteransko umijeće življenja, {{ e.weekday }} {{ fmt_date(e.date, 'hr') }} u {{ e.time }}, HAZU, Zagreb. Prijave i predbilježba knjige s posvetom.{% endblock %}
+{% block ogtitle %}Predstavljanje knjige POMALO – {{ fmt_date(e.date, 'hr') }}, HAZU{% endblock %}
+{% block ogimage %}{{ url_for('static', filename='img/predstavljanje-more.jpg') }}{% endblock %}
+{% block main %}
+<figure class="ev-hero"><img src="{{ url_for('static', filename='img/predstavljanje-more.jpg') }}" alt="" width="1080" height="368"><figcaption>Fotografija mora: Ana Vlahov, iz knjige</figcaption></figure>
+<section class="band ev">
+  <div class="wrap ev-wrap">
+    <p class="ev-kicker">Academia de la Vida poziva vas na predstavljanje knjige</p>
+    <p class="ev-authors">akademkinje Vide Demarin i Snježane Cenić Stojaković</p>
+    <h1 class="ev-title">POMALO<span>Mediteransko umijeće življenja</span></h1>
+    <p class="ev-sub">Što nam hrvatski Jadran otkriva o zdravlju, dugovječnosti i dobrom životu</p>
+    <p class="ev-when">{{ e.weekday|capitalize }}, {{ fmt_date(e.date, 'hr') }} u {{ e.time }}</p>
+    <p class="ev-where">Velika sjednička dvorana Hrvatske akademije znanosti i umjetnosti<br>Trg Nikole Šubića Zrinskog 11, Zagreb</p>
+    <p class="ev-org">U organizaciji Odbora za zdravlje mozga Razreda za medicinske znanosti Hrvatske akademije znanosti i umjetnosti</p>
+    <p class="ev-org">O knjizi govore autorice i recenzenti <strong>akademik Davor Miličić i akademik Zvonko Kusić</strong>. Razgovor vodi <strong>Matilda Bulić</strong>.</p>
+
+    <div class="book ev-box" id="prijava">
+      {% if not reg_open %}
+        <h2>Prijave su zatvorene</h2>
+        <p>Rok za prijave bio je {{ fmt_date(e.reg_until, 'hr') }} Za upite pišite na <a href="mailto:{{ cfg.ORG_EMAIL }}">{{ cfg.ORG_EMAIL }}</a>.</p>
+      {% else %}
+      <h2>Prijava dolaska</h2>
+      <p>Broj mjesta je ograničen. Prijave primamo do {{ fmt_date(e.reg_until, 'hr') }}
+        {% if left > 0 %}<strong>Slobodnih mjesta: {{ left }}.</strong>{% else %}<strong>Sva su mjesta popunjena; nove prijave idu na listu čekanja.</strong>{% endif %}</p>
+      <form id="ev-form" class="book-form" novalidate data-api="{{ url_for('api_event') }}" data-cents="{{ e.book_cents }}"
+            data-msg='{{ {"err_prefix": "Molimo provjerite:", "server": t.err_server|replace("{email}", cfg.ORG_EMAIL), "sending": t.f_sending, "submit": "Pošalji prijavu", "code_hr": t.code_hr, "code_eu": t.code_eu, "dl_png": t.dl_png, "dl_pdf": t.dl_pdf, "copy": t.copy_btn, "copied": t.copied}|tojson|forceescape }}'>
+        <div class="hp" aria-hidden="true"><label>Web <input name="web" tabindex="-1" autocomplete="off"></label></div>
+        <div class="row2">
+          <div class="field"><label for="e-ime">Ime i prezime</label><input type="text" id="e-ime" name="ime" autocomplete="name" required></div>
+          <div class="field"><label for="e-email">E-mail</label><input type="email" id="e-email" name="email" autocomplete="email" required></div>
+          <div class="field"><label for="e-mob">Mobitel</label><input type="tel" id="e-mob" name="mobitel" autocomplete="tel" required></div>
+          <div class="field"><span class="lbl">Dolazim</span>
+            <label class="choice"><input type="radio" name="dolazak" value="1" checked> <span>sam/a</span></label>
+            <label class="choice"><input type="radio" name="dolazak" value="2"> <span>s jednom osobom</span></label>
+          </div>
+        </div>
+
+        {% if books_open %}
+        <fieldset class="ev-books">
+          <legend>Predbilježba knjige s posvetom (neobavezno)</legend>
+          <p>Knjigu s posvetom autorica dobivate uz donaciju udruzi od <strong>{{ fmt_eur(e.book_cents, 'hr') }}</strong> po primjerku. Rok za uplatu je {{ fmt_date(e.book_until, 'hr') }}, a knjigu preuzimate na predstavljanju. Posvetu potpisujemo kad uplata stigne.</p>
+          <div class="field"><label for="e-qty">Broj primjeraka</label>
+            <select id="e-qty" name="primjerci">{% for n in range(0, e.max_copies + 1) %}<option value="{{ n }}">{{ n if n else 'bez knjige' }}</option>{% endfor %}</select></div>
+          <div id="e-names"></div>
+          <p class="note" id="e-total" hidden></p>
+        </fieldset>
+        {% endif %}
+
+        <label class="choice"><input type="checkbox" name="privatnost" value="1" required> <span>Podatke koristimo samo za organizaciju predstavljanja i predbilježbu knjige. Pročitao/la sam <a href="{{ url_for('privacy_hr') }}">obavijest o privatnosti</a>.</span></label>
+        <p class="err" id="ev-err" role="alert" hidden></p>
+        <button type="submit" class="btn btn-gold" id="ev-btn">Pošalji prijavu</button>
+      </form>
+      <div class="ok paybox" id="ev-ok" tabindex="-1" hidden></div>
+      {% endif %}
+    </div>
+    <p class="book-back">Više o knjizi: <a href="{{ url_for('book_hr') }}">academiadelavida.hr/knjiga</a> · <a href="{{ url_for('index_hr') }}">O Akademiji</a></p>
+  </div>
+</section>
+{% endblock %}

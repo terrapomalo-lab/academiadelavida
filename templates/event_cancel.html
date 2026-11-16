@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Odjava s predstavljanja · Academia de la Vida{% endblock %}
+{% block main %}
+<section class="band ev"><div class="wrap ev-wrap">
+  <h1 class="ev-title" style="font-size:2rem">Predstavljanje knjige POMALO</h1>
+  <p class="ev-when">{{ e.weekday|capitalize }}, {{ fmt_date(e.date, 'hr') }} u {{ e.time }}, HAZU</p>
+  <div class="book ev-box">
+  {% if r.status == 'cancelled' %}
+    <h2>{{ 'Odjava je zaprimljena' if done else 'Ova prijava je već odjavljena' }}</h2>
+    <p>Hvala što ste javili. Vaše mjesto dobiva netko s liste čekanja.</p>
+    {% if r.book_status == 'paid' %}<p>Za knjigu s posvetom koju ste već platili javit ćemo vam se e-mailom oko preuzimanja.</p>{% endif %}
+  {% else %}
+    <h2>Odjava</h2>
+    <p>{{ r.full_name }}, prijava {{ r.reference }} ({{ 'mjesto potvrđeno' if r.status == 'confirmed' else 'lista čekanja' }}{{ ', 2 osobe' if r.seats == 2 }}).</p>
+    {% if r.book_qty %}<p>Uz odjavu se poništava i predbilježba knjige s posvetom ({{ names|join(', ') }}){% if r.book_status == 'paid' %}; za već uplaćenu knjigu javit ćemo vam se oko preuzimanja{% endif %}.</p>{% endif %}
+    <form method="post"><button class="btn btn-gold" type="submit">Da, odjavljujem se</button></form>
+  {% endif %}
+  </div>
+</div></section>
+{% endblock %}

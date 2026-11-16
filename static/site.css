@@ -254,3 +254,23 @@ footer .meta{color:#C9D3DE}
 .book-offer{border-top:1px solid var(--line);padding-top:1.2rem;font-weight:500}
 .book-offer .note{font-weight:400}
 .book-about p{margin:0 0 .75rem}
+
+/* predstavljanje knjige */
+.ev-hero{margin:0;position:relative}
+.ev-hero img{display:block;width:100%;height:auto;max-height:340px;object-fit:cover}
+.ev-hero figcaption{position:absolute;right:12px;bottom:6px;font-size:.72rem;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.ev-wrap{max-width:760px;text-align:center}
+.ev-kicker{letter-spacing:.14em;text-transform:uppercase;font-size:.85rem;font-weight:600;margin:0 0 .4rem}
+.ev-authors{font-family:var(--serif);font-size:1.25rem;margin:0 0 1rem}
+.ev-title{font-family:var(--serif);color:var(--gold);font-size:clamp(2.6rem,9vw,4.4rem);font-weight:500;letter-spacing:.06em;line-height:1;margin:0}
+.ev-title span{display:block;font-size:.42em;letter-spacing:0;margin-top:.4rem}
+.ev-sub{font-family:var(--serif);font-style:italic;font-size:1.1rem;margin:.8rem 0 1.2rem}
+.ev-when{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--navy);margin:0 0 .4rem}
+.ev-where{margin:0 0 .8rem}
+.ev-org{color:var(--muted);font-size:.95rem;margin:.3rem 0}
+.ev-box{text-align:left;margin-top:2rem}
+.ev-box h2{font-size:1.5rem;margin:0 0 .5rem}
+.ev-books{border:1px solid var(--line);padding:1rem;margin:0;min-width:0}
+.ev-books legend{font-weight:600;padding:0 .4rem}
+.lbl{display:block;font-weight:600;margin-bottom:.4rem}
+#e-names .field{margin-top:.7rem}

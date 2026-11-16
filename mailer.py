@@ -13,6 +13,13 @@ import services as S
 def _attachments(con, cfg, spec):
     out = []
     for att in json.loads(spec or "[]"):
+        if att["kind"] == "event_hub3_png":
+            import events as E
+            r = con.execute("SELECT * FROM event_regs WHERE id=?", (att.get("reg_id"),)).fetchone()
+            if r and r["book_qty"]:
+                out.append((f"kod-za-placanje-{r['reference']}.png", "image", "png", P.hub3_png(E.payment(cfg, r)["hub3"], scale=4)))
+                out.append((f"uplatnica-{r['reference']}.pdf", "application", "pdf", E.pdf(cfg, r)))
+            continue
         if att["kind"] == "book_hub3_png":
             o = con.execute("SELECT * FROM book_orders WHERE id=?", (att.get("order_id"),)).fetchone()
             if o:
