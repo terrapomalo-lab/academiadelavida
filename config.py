@@ -84,6 +84,8 @@ class Config:
     MAIL_FROM = _env("ADV_MAIL_FROM", "Academia de la Vida <academiadelavidaudruga@gmail.com>")
     MAIL_REPLY_TO = _env("ADV_MAIL_REPLY_TO", "academiadelavidaudruga@gmail.com")
     DIGEST_TO = _env("ADV_DIGEST_TO", "academiadelavidaudruga@gmail.com")
+    # Odmah obavijest udruzi za svaku novu prijavu i narudžbu knjige (prazno = isključeno)
+    NOTIFY_TO = _env("ADV_NOTIFY_TO", "academiadelavidaudruga@gmail.com")
     MAIL_SUPPRESS_SEND = _env("ADV_MAIL_SUPPRESS", "0") == "1"  # za testiranje: poruke se ne šalju
 
     # --- Zaštita obrasca ---

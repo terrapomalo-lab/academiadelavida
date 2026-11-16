@@ -138,9 +138,12 @@ def create_app(overrides=None):
         try:
             con.execute("BEGIN IMMEDIATE")
             oid = S.queue_confirmation(con, a, cfg)
+            nid = S.queue_admin_notice_application(con, cfg, a)
             DB.audit(con, "web", "application", a["public_no"])
             con.execute("COMMIT")
             s, _f = mailer.send_outbox(con, cfg, ids=[oid], batch=1, include_failed=False)
+            if nid:
+                mailer.send_outbox(con, cfg, ids=[nid], batch=1, include_failed=False)
             sent = s == 1
         except Exception:
             app.logger.exception("Potvrda nije poslana; prijava je spremljena")
@@ -198,9 +201,10 @@ def create_app(overrides=None):
         try:
             con.execute("BEGIN IMMEDIATE")
             oid = S.queue_book_confirmation(con, cfg, o)
+            nid = S.queue_admin_notice_book(con, cfg, o)
             DB.audit(con, "web", "book_order", o["reference"])
             con.execute("COMMIT")
-            mailer.send_outbox(con, cfg, ids=[oid], batch=1, include_failed=False)
+            mailer.send_outbox(con, cfg, ids=[oid] + ([nid] if nid else []), batch=2, include_failed=False)
         except Exception:
             app.logger.exception("Potvrda za knjigu nije poslana; zahtjev je spremljen")
             try:

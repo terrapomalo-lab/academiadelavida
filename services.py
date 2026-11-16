@@ -730,6 +730,29 @@ def book_pay_rows(cfg, o, lang):
                  [t["pay_desc"], pay["description"], None]]
 
 
+def queue_admin_notice_application(con, cfg, a):
+    if not cfg.get("NOTIFY_TO"):
+        return None
+    pkg = ("redovito" if a["member_type"] == "regular" else "pridruženo") + (", snižena članarina" if a["fee_cat"] == "student" else "")
+    nl = con.execute("SELECT 1 FROM subscribers WHERE email=? AND unsubscribed_at IS NULL", (a["email"],)).fetchone()
+    body = (f"Nova pristupnica na stranici.\n\n"
+            f"Broj: {a['public_no']}\nIme i prezime: {a['full_name']}\nE-mail: {a['email']}\n"
+            f"Članstvo: {pkg} · {fee_text(cfg, a, 'hr')}\nNewsletter: {'da' if nl else 'ne'}\n\n"
+            f"Administracija: {cfg['BASE_URL']}/admin/prijave")
+    return queue_email(con, "notice", cfg["NOTIFY_TO"], f"Nova prijava {a['public_no']} – {a['full_name']}", body)
+
+
+def queue_admin_notice_book(con, cfg, o):
+    if not cfg.get("NOTIFY_TO"):
+        return None
+    body = (f"Nova narudžba knjige uz donaciju.\n\n"
+            f"Poziv na broj: HR00 {o['reference']}\nIme i prezime: {o['full_name']}\nE-mail: {o['email']}\n"
+            f"Mobitel: {o['phone']}\nPaketomat: {o['locker']}\nBroj knjiga: {o['qty']}\n"
+            f"Donacija: {P.fmt_eur(o['amount_cents'])}\n\nKnjigu šaljete kad uplata stigne.\n"
+            f"Administracija: {cfg['BASE_URL']}/admin/knjige")
+    return queue_email(con, "notice", cfg["NOTIFY_TO"], f"Nova narudžba knjige {o['reference']} – {o['full_name']}", body)
+
+
 def queue_book_confirmation(con, cfg, o):
     _pay, rows = book_pay_rows(cfg, o, o["lang"])
     pay_txt = "\n".join(f"  {r[0]}: {r[1]}" for r in rows)

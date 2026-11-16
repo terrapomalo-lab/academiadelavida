@@ -148,8 +148,8 @@ def test_smtp_failure_keeps_application(env, tmp_path):
     assert o["status"] == "failed" and o["last_error"]
     app.config.update(MAIL_SUPPRESS_SEND=True)
     s, f = mailer.send_outbox(con, app.config)
-    assert (s, f) == (1, 0)
-    assert con.execute("SELECT status FROM outbox").fetchone()[0] == "sent"
+    assert (s, f) == (2, 0)   # potvrda prijavitelju + obavijest udruzi
+    assert {r[0] for r in con.execute("SELECT status FROM outbox")} == {"sent"}
 
 
 # ------------------------------------------------------------------ administracija
@@ -569,3 +569,12 @@ def test_book_page(env):
     assert r.status_code == 200 and 'id="book-form"' in html and "knjiga-naslovnica.jpg" in html
     assert 'href="/knjiga"' in c.get("/").get_data(as_text=True)
     assert c.get("/en/book").status_code == 200
+
+
+def test_admin_notices(env):
+    app, c, con = env
+    c.post("/api/prijava", data=form())
+    c.post("/api/knjiga", data=book_form())
+    rows = con.execute("SELECT to_addr, subject FROM outbox WHERE kind='notice' ORDER BY id").fetchall()
+    assert len(rows) == 2 and all(r[0] == app.config["NOTIFY_TO"] for r in rows)
+    assert rows[0][1].startswith("Nova prijava ADV-") and rows[1][1].startswith("Nova narudžba knjige 7-")
