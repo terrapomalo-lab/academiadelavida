@@ -39,8 +39,8 @@
 
         {% if books_open %}
         <fieldset class="ev-books">
-          <legend>Predbilježba knjige s posvetom (neobavezno)</legend>
-          <p>Knjigu s posvetom autorica dobivate uz donaciju udruzi od <strong>{{ fmt_eur(e.book_cents, 'hr') }}</strong> po primjerku. Rok za uplatu je {{ fmt_date(e.book_until, 'hr') }}, a knjigu preuzimate na predstavljanju. Posvetu potpisujemo kad uplata stigne.</p>
+          <legend>Predbilježba knjige, s posvetom ili bez (neobavezno)</legend>
+          <p>Knjigu, po želji s posvetom autorica, dobivate uz donaciju udruzi od <strong>{{ fmt_eur(e.book_cents, 'hr') }}</strong> po primjerku. Rok za uplatu je {{ fmt_date(e.book_until, 'hr') }}, a knjigu preuzimate na predstavljanju. Ako ne želite posvetu, ostavite polje za ime prazno. Posvetu potpisujemo kad uplata stigne.</p>
           <div class="field"><label for="e-qty">Broj primjeraka</label>
             <select id="e-qty" name="primjerci">{% for n in range(0, e.max_copies + 1) %}<option value="{{ n }}">{{ n if n else 'bez knjige' }}</option>{% endfor %}</select></div>
           <div id="e-names"></div>

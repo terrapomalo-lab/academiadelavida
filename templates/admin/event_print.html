@@ -9,7 +9,7 @@
 </tbody></table>
 {% elif which == 'knjige' %}
 <table><thead><tr><th>✓</th><th>Ime za posvetu</th><th>Naručitelj</th><th>Poziv na broj</th><th>Uplata</th></tr></thead><tbody>
-{% for n, r in dedrows %}<tr><td class="box"></td><td><strong>{{ n }}</strong></td><td>{{ r.full_name }}{{ ' (odjavljen/a)' if r.status == 'cancelled' }}</td><td>{{ r.reference }}</td><td>{{ 'plaćeno' if r.book_status == 'paid' else 'NIJE PLAĆENO' }}</td></tr>{% endfor %}
+{% for n, r in dedrows %}<tr><td class="box"></td><td>{% if n == "bez posvete" %}<em>bez posvete</em>{% else %}<strong>{{ n }}</strong>{% endif %}</td><td>{{ r.full_name }}{{ ' (odjavljen/a)' if r.status == 'cancelled' }}</td><td>{{ r.reference }}</td><td>{{ 'plaćeno' if r.book_status == 'paid' else 'NIJE PLAĆENO' }}</td></tr>{% endfor %}
 </tbody></table>
 {% else %}
 <table><thead><tr><th>#</th><th>Ime i prezime</th><th>Osoba</th><th>Mobitel</th><th>Broj prijave</th></tr></thead><tbody>

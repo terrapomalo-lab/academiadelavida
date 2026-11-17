@@ -622,14 +622,16 @@ def test_event_registration_with_books(env):
     assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='notice'").fetchone()[0] == 1
     # dvostruka prijava istim e-mailom
     assert c.post("/api/predstavljanje", data=ev_form()).status_code == 409
-    # nedostaje ime za posvetu
-    r = c.post("/api/predstavljanje", data=ev_form(names=["X"], email="b@example.com", primjerci="2"))
-    assert r.status_code == 400 and "posvetu" in r.json["message"]
+    # prazno ime = knjiga bez posvete
+    r = c.post("/api/predstavljanje", data=ev_form(names=["", "Ivo"], email="b@example.com"))
+    assert r.status_code == 200
+    rid = con.execute("SELECT id FROM event_regs WHERE email='b@example.com'").fetchone()[0]
+    assert E.dedications(con, rid) == ["bez posvete", "Ivo"]
     # uplata s izvoda
     csv_ = f"datum;iznos;platitelj;poziv_na_broj;opis;id_transakcije\n2026-11-20;79,80;Iva;HR00 {reg['reference']};;T-E1\n"
     res = S.import_statement(con, app.config, "test", csv_.encode())
     assert res.get("event_books") == 1
-    assert con.execute("SELECT book_status FROM event_regs").fetchone()[0] == "paid"
+    assert con.execute("SELECT book_status FROM event_regs WHERE id=?", (reg["id"],)).fetchone()[0] == "paid"
     assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='event_book_paid'").fetchone()[0] == 1
 
 

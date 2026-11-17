@@ -725,7 +725,8 @@ def create_app(overrides=None):
         confirmed = [r for r in regs if r["status"] == "confirmed"]
         waitlist = sorted([r for r in regs if r["status"] == "waitlist"], key=lambda r: r["id"])
         dedrows = sorted([(n, r) for r in regs if r["book_qty"] and r["book_status"] != "cancelled" for n in ded[r["id"]]],
-                         key=lambda x: x[0].lower())
+                         # posvete abecedno; primjerci bez posvete na kraju, po naručitelju
+                         key=lambda x: ("1" + x[1]["full_name"].lower()) if x[0] == E.NO_DEDICATION else ("0" + x[0].lower()))
         return regs, ded, confirmed, waitlist, dedrows
 
     @app.route("/admin/predstavljanje", methods=["GET", "POST"])

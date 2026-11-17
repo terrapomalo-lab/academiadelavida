@@ -153,7 +153,8 @@
       for (var i = 1; i <= n; i++) {
         var f = el("div", "field"), id = "e-ded-" + i;
         var lab = el("label", null, n === 1 ? "Ime za posvetu" : "Ime za posvetu – " + i + ". primjerak"); lab.setAttribute("for", id);
-        var inp = el("input"); inp.type = "text"; inp.id = id; inp.name = "posveta"; inp.required = true; inp.maxLength = 80; inp.value = old[i - 1] || "";
+        var inp = el("input"); inp.type = "text"; inp.id = id; inp.name = "posveta"; inp.maxLength = 80; inp.value = old[i - 1] || "";
+        inp.placeholder = "ostavite prazno ako želite knjigu bez posvete";
         f.appendChild(lab); f.appendChild(inp); enames.appendChild(f);
       }
       if (n) { etot.textContent = "Ukupno za uplatu: " + (n * ecents / 100).toFixed(2).replace(".", ",") + " €"; etot.hidden = false; } else etot.hidden = true;

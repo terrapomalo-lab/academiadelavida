@@ -8,6 +8,7 @@ import payments as P
 import services as S
 from db import now_iso, audit
 
+NO_DEDICATION = "bez posvete"
 EVENT_RE = re.compile(r"(?<![\d-])8-(\d{4})-(\d{4})(?![\d-])")
 PHONE_RE = re.compile(r"^\+?[\d\s/()-]{8,20}$")
 
@@ -99,9 +100,11 @@ def validate(form, cfg, today=None):
     if not 0 <= qty <= ev(cfg)["max_copies"]:
         errs.append("odaberite broj primjeraka")
         qty = 0
-    if qty and (len(names) < qty or any(len(n) < 2 for n in names)):
-        errs.append("upišite ime za posvetu za svaki primjerak")
-    d["book_qty"], d["names"] = qty, names[:qty]
+    # prazno polje = primjerak bez posvete
+    names = (names + [""] * qty)[:qty]
+    if any(0 < len(n) < 2 for n in names):
+        errs.append("ime za posvetu je prekratko")
+    d["book_qty"], d["names"] = qty, [n or NO_DEDICATION for n in names]
     if not form.get("privatnost"):
         errs.append("potvrdite da ste pročitali obavijest o privatnosti")
     return d, errs
