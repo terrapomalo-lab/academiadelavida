@@ -10,6 +10,7 @@
 {% block main %}
 <section class="band book-page">
   <div class="wrap">
+    {% if event_open and lang == 'hr' %}<p class="book-event"><a href="{{ url_for('event_page') }}">Predstavljanje knjige u HAZU-u, {{ fmt_date(cfg.EVENT.date, 'hr') }} u {{ cfg.EVENT.time }}: prijava i predbilježba knjige s posvetom →</a></p>{% endif %}
     {% if book_active %}{% with full = true %}{% include "_book.html" %}{% endwith %}
     {% else %}<p>{{ t.book_closed }}</p>{% endif %}
     <p class="book-back">{{ t.book_about }} <a href="{{ home }}">{{ t.book_about_link }}</a></p>

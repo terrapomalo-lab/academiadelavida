@@ -15,7 +15,8 @@
 {% block headcta %}<a class="btn btn-gold btn-sm" href="#pristupnica">{{ t.cta_join }}</a>{% endblock %}
 {% block main %}
 
-{% if book_active %}<a class="promo" href="{{ url_for('book_hr') if lang == 'hr' else url_for('book_en') }}">{{ t.book_promo|replace('{until}', fmt_date(cfg.BOOK_OFFER_UNTIL, lang)) }} <span aria-hidden="true">→</span></a>{% endif %}
+{% if event_open and lang == 'hr' %}<a class="promo" href="{{ url_for('event_page') }}">Predstavljanje knjige POMALO · HAZU, {{ cfg.EVENT.weekday }} {{ fmt_date(cfg.EVENT.date, 'hr') }} u {{ cfg.EVENT.time }} · prijave do {{ fmt_date(cfg.EVENT.reg_until, 'hr') }} <span aria-hidden="true">→</span></a>
+{% elif book_active %}<a class="promo" href="{{ url_for('book_hr') if lang == 'hr' else url_for('book_en') }}">{{ t.book_promo|replace('{until}', fmt_date(cfg.BOOK_OFFER_UNTIL, lang)) }} <span aria-hidden="true">→</span></a>{% endif %}
 <section class="hero">
   <div class="hero-grid">
     <div class="hero-logo">

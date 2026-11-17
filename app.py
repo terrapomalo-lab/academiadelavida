@@ -42,7 +42,7 @@ def create_app(overrides=None):
     @app.context_processor
     def inject():
         return {"cfg": cfg, "fmt_eur": P.fmt_eur, "fmt_date": P.fmt_date, "csrf_token": csrf_token,
-                "book_active": S.book_offer_active(cfg),
+                "book_active": S.book_offer_active(cfg), "event_open": E.reg_open(cfg),
                 "book_cover": os.path.exists(os.path.join(app.static_folder, cfg["BOOK_COVER"]))}
 
     @app.template_filter("linkify")

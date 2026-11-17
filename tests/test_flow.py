@@ -675,3 +675,11 @@ def test_event_reminder_deadline_and_admin(env):
     ev_setup(app, reg_until=(_date.today() - _td(days=1)).isoformat())
     assert c.post("/api/predstavljanje", data=ev_form(email="x@example.com")).status_code == 410
     assert E.purge_old(con, app.config, today=_date.fromisoformat(e["date"]) + _td(days=91)) == 2
+
+
+def test_event_promo_on_homepage(env):
+    app, c, con = env
+    ev_setup(app)
+    html = c.get("/").get_data(as_text=True)
+    assert 'href="/predstavljanje"' in html and "Predstavljanje knjige POMALO" in html
+    assert 'href="/predstavljanje"' in c.get("/knjiga").get_data(as_text=True)
