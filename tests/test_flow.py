@@ -683,3 +683,19 @@ def test_event_promo_on_homepage(env):
     html = c.get("/").get_data(as_text=True)
     assert 'href="/predstavljanje"' in html and "Predstavljanje knjige POMALO" in html
     assert 'href="/predstavljanje"' in c.get("/knjiga").get_data(as_text=True)
+
+
+def test_email_has_inline_payment_code(env):
+    import mailer
+    app, c, con = env
+    ev_setup(app)
+    c.post("/api/predstavljanje", data=ev_form(names=["Mama"]))
+    row = con.execute("SELECT * FROM outbox WHERE kind='event_confirmation'").fetchone()
+    msg = mailer.build_message(con, app.config, row)
+    htmlpart = msg.get_body(("html",))
+    html = htmlpart.get_content()
+    assert "cid:" in html and html.index("cid:") < html.index("Iznos:")
+    assert any(p.get_content_type() == "image/png" for p in htmlpart.iter_parts()) or \
+        any(p.get_content_type() == "image/png" for p in msg.walk())
+    assert msg.get_body(("plain",)).get_content().count("Iznos:") == 1
+    assert any(p.get_filename() and p.get_filename().endswith(".pdf") for p in msg.iter_attachments())

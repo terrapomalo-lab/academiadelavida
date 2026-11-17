@@ -1,5 +1,7 @@
 """Slanje poruka iz reda (outbox). Poruka se nikad ne gubi: ako slanje zakaže, ostaje 'failed' i šalje se ponovno."""
+import html
 import json
+import re
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -67,9 +69,41 @@ def build_message(con, cfg, row):
     msg["Reply-To"] = cfg["MAIL_REPLY_TO"]
     msg["Message-ID"] = make_msgid(domain="academiadelavida.hr")
     msg.set_content(row["body_text"])
-    for fname, maintype, subtype, data in _attachments(con, cfg, row["attachments"]):
+    atts = _attachments(con, cfg, row["attachments"])
+    code = next((a for a in atts if a[0].startswith("kod-za-placanje") and a[2] == "png"), None)
+    if code:
+        # HTML inačica s kodom za plaćanje ispred podataka za uplatu (tekstna inačica ostaje za stare programe)
+        cid = make_msgid(domain="academiadelavida.hr")
+        msg.add_alternative(_html_with_code(row["body_text"], cid[1:-1]), subtype="html")
+        msg.get_payload()[1].add_related(code[3], maintype="image", subtype="png", cid=cid, filename=code[0])
+        atts = [a for a in atts if a is not code]
+    for fname, maintype, subtype, data in atts:
         msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=fname)
     return msg
+
+
+_PAY_LINE = re.compile(r"^\s+(Iznos|Amount):")
+_URL = re.compile(r"(https?://[^\s<]+)")
+
+
+def _html_with_code(text, cid):
+    lines = text.split("\n")
+    at = next((i for i, ln in enumerate(lines) if _PAY_LINE.match(ln)), None)
+    if at is not None and at > 0 and lines[at - 1].rstrip().endswith(":"):
+        at -= 1
+    def fmt(ln):
+        e = html.escape(ln)
+        return _URL.sub(r'<a href="\1" style="word-break:break-all">\1</a>', e)
+    block = (f'<div style="margin:16px 0"><img src="cid:{cid}" alt="Kod za plaćanje (HUB3)" width="360" '
+             f'style="width:360px;max-width:100%;height:auto;display:block;border:0"><div style="font-size:13px;color:#555;margin-top:6px">'
+             f'Skenirajte kod u aplikaciji mobilnog bankarstva / Scan the code in your mobile banking app</div></div>')
+    parts = [fmt(ln) for ln in lines]
+    body = "<br>\n".join(parts if at is None else parts[:at]) + (block if at is not None else "") + \
+           ("" if at is None else "<br>\n".join(parts[at:]))
+    if at is None:
+        body = block + body
+    return ('<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a">'
+            + body + "</body></html>")
 
 
 def send_outbox(con, cfg, ids=None, batch=40, include_failed=True, max_attempts=8):
