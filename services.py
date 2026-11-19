@@ -702,7 +702,21 @@ def validate_book(form, cfg, lang):
         errs.append("err_book_amount")
     if not form.get("privatnost"):
         errs.append("err_privacy")
+    raw = form.getlist("posveta") if hasattr(form, "getlist") else []
+    d["dedications"] = ([" ".join(n.split())[:80] for n in raw] + [""] * d["qty"])[:d["qty"]]
     return d, errs
+
+
+def book_dedications(con, order_id):
+    return [r[0] for r in con.execute("SELECT name FROM book_dedications WHERE order_id=? ORDER BY pos", (order_id,))]
+
+
+def book_ded_text(names, lang):
+    """Npr. '1. Ana; 2. bez posvete' – ili '' ako nijedna knjiga nema posvetu."""
+    if not any(names):
+        return ""
+    none = "bez posvete" if lang == "hr" else "no dedication"
+    return "; ".join(f"{i}. {n or none}" for i, n in enumerate(names, 1))
 
 
 def create_book_order(con, d, ip=None):
@@ -717,6 +731,8 @@ def create_book_order(con, d, ip=None):
                     (year, seq, ref, secrets.token_urlsafe(24), created_at, d["lang"], d["full_name"], d["email"],
                      d["phone"], d["locker"], d["qty"], d["amount_cents"], ip))
         oid = con.execute("SELECT last_insert_rowid()").fetchone()[0]
+        for i, n in enumerate(d.get("dedications") or [], 1):
+            con.execute("INSERT INTO book_dedications(order_id, pos, name) VALUES (?,?,?)", (oid, i, n))
         con.execute("COMMIT")
     except Exception:
         con.execute("ROLLBACK")
@@ -758,7 +774,9 @@ def queue_admin_notice_book(con, cfg, o):
     body = (f"Nova narudžba knjige uz donaciju.\n\n"
             f"Poziv na broj: HR00 {o['reference']}\nIme i prezime: {o['full_name']}\nE-mail: {o['email']}\n"
             f"Mobitel: {o['phone']}\nPaketomat: {o['locker']}\nBroj knjiga: {o['qty']}\n"
-            f"Donacija: {P.fmt_eur(o['amount_cents'])}\n\nKnjigu šaljete kad uplata stigne.\n"
+            f"Donacija: {P.fmt_eur(o['amount_cents'])}\n"
+            + (f"Posvete: {book_ded_text(book_dedications(con, o['id']), 'hr')}\n" if any(book_dedications(con, o["id"])) else "") +
+            "\nKnjigu šaljete kad uplata stigne.\n"
             f"Administracija: {cfg['BASE_URL']}/admin/knjige")
     return queue_email(con, "notice", cfg["NOTIFY_TO"], f"Nova narudžba knjige {o['reference']} – {o['full_name']}", body)
 
@@ -766,7 +784,8 @@ def queue_admin_notice_book(con, cfg, o):
 def queue_book_confirmation(con, cfg, o):
     _pay, rows = book_pay_rows(cfg, o, o["lang"])
     pay_txt = "\n".join(f"  {r[0]}: {r[1]}" for r in rows)
-    s, b = i18n.email_book_confirmation(o["lang"], o, pay_txt, P.fmt_eur(o["amount_cents"], o["lang"]))
+    s, b = i18n.email_book_confirmation(o["lang"], o, pay_txt, P.fmt_eur(o["amount_cents"], o["lang"]),
+                                        book_ded_text(book_dedications(con, o["id"]), o["lang"]))
     return queue_email(con, "book_confirmation", o["email"], s, b, [{"kind": "book_hub3_png", "order_id": o["id"]}])
 
 

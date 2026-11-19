@@ -43,6 +43,7 @@ def create_app(overrides=None):
     def inject():
         return {"cfg": cfg, "fmt_eur": P.fmt_eur, "fmt_date": P.fmt_date, "csrf_token": csrf_token,
                 "book_active": S.book_offer_active(cfg), "event_open": E.reg_open(cfg),
+                "book_min": lambda n: S.book_min_cents(cfg, n),
                 "book_cover": os.path.exists(os.path.join(app.static_folder, cfg["BOOK_COVER"]))}
 
     @app.template_filter("linkify")
@@ -858,7 +859,32 @@ def create_app(overrides=None):
             return redirect(url_for("admin_books"))
         orders = con.execute("""SELECT * FROM book_orders ORDER BY
                                 CASE status WHEN 'paid' THEN 0 WHEN 'pending' THEN 1 WHEN 'shipped' THEN 2 ELSE 3 END, id DESC""").fetchall()
-        return render_template("admin/books.html", orders=orders, fmt_eur=P.fmt_eur, today=date.today().isoformat())
+        ded = {o["id"]: S.book_dedications(con, o["id"]) for o in orders}
+        return render_template("admin/books.html", orders=orders, ded=ded, fmt_eur=P.fmt_eur, today=date.today().isoformat())
+
+    @app.get("/admin/knjige/izvoz.xlsx")
+    @admin_required
+    def admin_books_xlsx():
+        from openpyxl import Workbook
+        con = DB.get_db()
+        st = {"pending": "čeka uplatu", "paid": "plaćeno – za slanje", "shipped": "poslano", "cancelled": "otkazano"}
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Knjige uz donaciju"
+        ws.append(["Poziv na broj", "Zaprimljeno", "Donator", "E-mail", "Mobitel", "BOX NOW paketomat", "Broj knjiga",
+                   "Posvete", "Donacija (€)", "Status", "Plaćeno", "Broj pošiljke"])
+        for o in con.execute("SELECT * FROM book_orders ORDER BY id").fetchall():
+            ws.append(["HR00 " + o["reference"], o["created_at"][:10], o["full_name"], o["email"], o["phone"], o["locker"], o["qty"],
+                       S.book_ded_text(S.book_dedications(con, o["id"]), "hr"), o["amount_cents"] / 100, st.get(o["status"], o["status"]),
+                       o["paid_date"] or "", o["tracking"] or ""])
+        for col in ws.columns:
+            ws.column_dimensions[col[0].column_letter].width = min(45, max(10, max(len(str(c.value or "")) for c in col) + 2))
+        DB.audit(con, g.admin, "export", "knjige.xlsx")
+        out = io.BytesIO()
+        wb.save(out)
+        out.seek(0)
+        return send_file(out, as_attachment=True, download_name=f"knjige-uz-donaciju-{date.today().isoformat()}.xlsx",
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     # --- uplate
     @app.route("/admin/uplate", methods=["GET", "POST"])

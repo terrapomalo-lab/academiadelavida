@@ -134,6 +134,13 @@ CREATE TABLE IF NOT EXISTS book_orders (
   UNIQUE(year, seq)
 );
 
+CREATE TABLE IF NOT EXISTS book_dedications (
+  id INTEGER PRIMARY KEY,
+  order_id INTEGER NOT NULL REFERENCES book_orders(id),
+  pos INTEGER NOT NULL,
+  name TEXT NOT NULL                       -- prazno = bez posvete
+);
+
 -- Red poruka: sve e-poruke prolaze kroz ovu tablicu (ponovno slanje ako slanje zakaže)
 CREATE TABLE IF NOT EXISTS outbox (
   id INTEGER PRIMARY KEY,

@@ -146,7 +146,7 @@ T = {
   "book_authors": "Vida Demarin i Snježana Cenić Stojaković",
   "book_publisher": "Nakladnik: vlastita naklada Snježana Cenić Stojaković, 2026. Hrvatsko izdanje.",
   "book_offer": "Do {until} uz donaciju od {unit} ili više na dar dobivate knjigu, s dostavom u BOX NOW paketomat u Hrvatskoj.",
-  "book_offer_note": "Najmanja donacija je {price} po knjizi i {ship} za dostavu, a dostava je ista za do {per} knjige u jednom paketu (npr. 2 knjige: 82,80 €, 3 knjige: 122,70 €). Iznos iznad toga ide u cijelosti za rad Akademije.",
+  "book_offer_note": "Najmanja donacija je {price} po knjizi i {ship} za dostavu, a dostava je ista za do {per} knjige u jednom paketu (npr. 2 knjige: {ex2}, 3 knjige: {ex3}). Iznos iznad toga ide u cijelosti za rad Akademije.",
   "book_name": "Ime i prezime", "book_email": "E-mail", "book_phone": "Mobitel",
   "book_phone_hint": "BOX NOW na ovaj broj šalje kod za otvaranje paketomata.",
   "book_locker": "BOX NOW paketomat",
@@ -154,6 +154,9 @@ T = {
   "book_locker_ph": "Odabrani paketomat",
   "book_locker_hint": "Kliknite gumb, odaberite paketomat na karti i on će se sam upisati. Ako karta ne radi, upišite adresu paketomata ručno:",
   "book_locker_find": "popis paketomata",
+  "book_ded": "Posveta (neobavezno)", "book_ded_n": "Posveta – {n}. knjiga (neobavezno)",
+  "book_ded_ph": "ime osobe kojoj je posveta; prazno = bez posvete",
+  "book_ded_note": "Knjige s posvetom šaljemo nakon 30. studenoga, kad ih autorice zajedno potpišu.",
   "book_qty": "Broj knjiga", "book_amount": "Iznos donacije (€)",
   "book_privacy": "Podatke koristimo samo za slanje knjige i potvrdu donacije; ime, mobitel i e-mail predajemo dostavnoj službi BOX NOW. Pročitao/la sam {obavijest}.",
   "book_submit": "Pošalji i prikaži kod za uplatu",
@@ -338,7 +341,7 @@ T = {
   "book_authors": "Vida Demarin and Snježana Cenić Stojaković",
   "book_publisher": "Self-published by Snježana Cenić Stojaković, 2026. Croatian-language edition.",
   "book_offer": "Until {until}, with a donation of {unit} or more you receive the book as a gift, delivered to a BOX NOW parcel locker in Croatia.",
-  "book_offer_note": "The minimum donation is {price} per book plus {ship} for delivery; one delivery covers up to {per} books in one parcel (e.g. 2 books: €82.80, 3 books: €122.70). Any amount above that goes entirely to the work of the Academia.",
+  "book_offer_note": "The minimum donation is {price} per book plus {ship} for delivery; one delivery covers up to {per} books in one parcel (e.g. 2 books: {ex2}, 3 books: {ex3}). Any amount above that goes entirely to the work of the Academia.",
   "book_name": "Full name", "book_email": "Email", "book_phone": "Mobile phone",
   "book_phone_hint": "BOX NOW sends the locker opening code to this number.",
   "book_locker": "BOX NOW parcel locker",
@@ -346,6 +349,9 @@ T = {
   "book_locker_ph": "Selected parcel locker",
   "book_locker_hint": "Click the button, choose a locker on the map and it will be filled in automatically. If the map does not work, enter the locker address manually:",
   "book_locker_find": "list of parcel lockers",
+  "book_ded": "Dedication (optional)", "book_ded_n": "Dedication – book {n} (optional)",
+  "book_ded_ph": "name of the person the book is dedicated to; leave empty for no dedication",
+  "book_ded_note": "Books with a dedication are sent after 30 November, once both authors have signed them.",
   "book_qty": "Number of books", "book_amount": "Donation amount (€)",
   "book_privacy": "We use your data only to send the book and confirm your donation; your name, mobile number and email are passed to the delivery service BOX NOW. I have read the {obavijest}.",
   "book_submit": "Send and show payment code",
@@ -509,7 +515,7 @@ def unsub_footer(lang, link):
             f"\n\n—\nYou are receiving this because you signed up for the Academia de la Vida newsletter.\nUnsubscribe: {link}")
 
 
-def email_book_confirmation(lang, o, pay_txt, amount):
+def email_book_confirmation(lang, o, pay_txt, amount, ded=""):
     if lang == "hr":
         s = f"Donacija uz knjigu {o['reference']} – Academia de la Vida"
         b = (f"Dobar dan, {o['full_name']},\n\nhvala vam na podršci. Zaprimili smo vaš zahtjev za knjigu "
@@ -517,6 +523,7 @@ def email_book_confirmation(lang, o, pay_txt, amount):
              f"Podaci za uplatu donacije od {amount}:\n{pay_txt}\n\n"
              "Kod za plaćanje je u privitku; možete ga skenirati u aplikaciji mobilnog bankarstva.\n"
              "Važno: upišite točno ovaj poziv na broj, da bismo uplatu povezali s vašim zahtjevom.\n\n"
+             + (f"Posveta: {ded}\nKnjige s posvetom šaljemo nakon 30. studenoga, kad ih autorice zajedno potpišu.\n\n" if ded else "") +
              f"Knjigu šaljemo nakon što donacija stigne na račun udruge, u BOX NOW paketomat: {o['locker']}.\n"
              "Kod za otvaranje paketomata BOX NOW šalje SMS-om na vaš mobitel.")
     else:
@@ -526,6 +533,7 @@ def email_book_confirmation(lang, o, pay_txt, amount):
              f"Payment details for your donation of {amount}:\n{pay_txt}\n\n"
              "The payment code is attached; you can scan it in your mobile banking app.\n"
              "Important: use exactly this reference so we can match the payment to your request.\n\n"
+             + (f"Dedication: {ded}\nBooks with a dedication are sent after 30 November, once both authors have signed them.\n\n" if ded else "") +
              f"We send the book once the donation reaches the association's account, to the BOX NOW parcel locker: {o['locker']}.\n"
              "BOX NOW sends the locker opening code to your mobile phone by SMS.")
     return s, b + _sig(lang)

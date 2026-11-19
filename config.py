@@ -50,12 +50,12 @@ class Config:
     FEE_REDUCED_EUR = 20          # samo uz pridruženo članstvo
     # Prazno = sve prijave po ovoj odluci. (Datum se upisuje samo ako bi starije prijave trebale plaćati po staroj cijeni.)
     FEES_V2_FROM = _env("ADV_FEES_V2_FROM", "")
-    # Knjiga na dar uz donaciju (39,90 € + 3 € dostava BOX NOW), vrijedi do uključivo navedenog datuma
+    # Knjiga na dar uz donaciju (35 € + 3 € dostava BOX NOW), vrijedi do uključivo navedenog datuma
     BOOK_OFFER_UNTIL = _env("ADV_BOOK_OFFER_UNTIL", "2026-12-31")
-    BOOK_PRICE_CENTS = 3990       # knjiga
+    BOOK_PRICE_CENTS = 3500       # knjiga
     BOOK_SHIP_CENTS = 300         # dostava BOX NOW po paketu
     BOOK_PER_PARCEL = 3           # do 3 knjige u jednom paketu (jedna dostava)
-    BOOK_UNIT_CENTS = BOOK_PRICE_CENTS + BOOK_SHIP_CENTS   # najmanja donacija za 1 knjigu (42,90 €)
+    BOOK_UNIT_CENTS = BOOK_PRICE_CENTS + BOOK_SHIP_CENTS   # najmanja donacija za 1 knjigu (38,00 €)
     BOOK_MAX_QTY = 5
     BOOK_COVER = "img/knjiga-naslovnica.jpg"
     # Predstavljanje knjige POMALO (prijave na /predstavljanje)

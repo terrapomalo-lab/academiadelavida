@@ -118,8 +118,23 @@
     var berr = document.getElementById("book-err"), bok = document.getElementById("book-ok"), bbtn = document.getElementById("book-btn");
     var cents = function (v) { v = String(v).trim().replace(/\s|€/g, ""); if (blang === "hr") v = v.replace(/\./g, "").replace(",", "."); else v = v.replace(/,/g, ""); return Math.round(parseFloat(v) * 100); };
     var fmtc = function (c) { var s = (c / 100).toFixed(2); return blang === "hr" ? s.replace(".", ",") : s; };
+    var deds = document.getElementById("b-deds");
+    var drawDeds = function () {
+      if (!deds) return;
+      var n = +qty.value, old = [].map.call(deds.querySelectorAll("input"), function (i) { return i.value; });
+      deds.innerHTML = "";
+      for (var i = 1; i <= n; i++) {
+        var f = el("div", "field"), id = "b-ded-" + i;
+        var lab = el("label", null, n === 1 ? deds.getAttribute("data-label") : deds.getAttribute("data-label-n").replace("{n}", i));
+        lab.setAttribute("for", id);
+        var inp = el("input"); inp.type = "text"; inp.id = id; inp.name = "posveta"; inp.maxLength = 80;
+        inp.placeholder = deds.getAttribute("data-ph"); inp.value = old[i - 1] || "";
+        f.appendChild(lab); f.appendChild(inp); deds.appendChild(f);
+      }
+    };
     qty.addEventListener("change", function () {
       amt.value = fmtc(minFor(+qty.value));
+      drawDeds();
     });
     bf.addEventListener("submit", function (ev) {
       ev.preventDefault();

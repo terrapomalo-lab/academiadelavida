@@ -2,6 +2,7 @@
 {% block title %}Knjige{% endblock %}
 {% block main %}
 <h1>Knjige uz donaciju</h1>
+<p><a href="{{ url_for('admin_books_xlsx') }}">Izvoz svih narudžbi u Excel</a></p>
 <p class="muted">Kad donacija stigne (uvoz izvoda s pozivom na broj 7-…, ili ručno ovdje), donator dobiva zahvalu, a zahtjev prelazi u „za slanje“. Pošiljku izradite u BOX NOW-u za navedeni paketomat, zatim ovdje upišite broj pošiljke i kliknite „Poslano“ – donator dobiva obavijest.</p>
 {% set groups = [('paid','Plaćeno – za slanje'),('pending','Čeka uplatu'),('shipped','Poslano'),('cancelled','Otkazano')] %}
 {% for st, label in groups %}
@@ -13,7 +14,7 @@
 <tbody>{% for o in rows %}
 <tr>
   <td>{{ o.reference }}</td><td>{{ o.created_at[:10] }}</td><td>{{ o.full_name }}</td>
-  <td>{{ o.email }}<br>{{ o.phone }}</td><td>{{ o.locker }}</td><td class="num">{{ o.qty }}</td><td class="num">{{ fmt_eur(o.amount_cents) }}</td>
+  <td>{{ o.email }}<br>{{ o.phone }}</td><td>{{ o.locker }}</td><td class="num">{{ o.qty }}{% if ded[o.id]|select|list %}<br><span class="muted">Posvete:{% for n in ded[o.id] %}<br>{{ loop.index }}. {{ n or 'bez posvete' }}{% endfor %}</span>{% endif %}</td><td class="num">{{ fmt_eur(o.amount_cents) }}</td>
   <td>
   {% if st == 'pending' %}
     <form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="order_id" value="{{ o.id }}">

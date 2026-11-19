@@ -25,7 +25,7 @@
       <div class="book-offer">
         <div>
           <p>{{ t.book_offer|replace('{until}', until)|replace('{unit}', unit) }}</p>
-          <p class="note">{{ t.book_offer_note|replace('{price}', fmt_eur(cfg.BOOK_PRICE_CENTS, lang))|replace('{ship}', fmt_eur(cfg.BOOK_SHIP_CENTS, lang))|replace('{per}', cfg.BOOK_PER_PARCEL|string) }}</p>
+          <p class="note">{{ t.book_offer_note|replace('{price}', fmt_eur(cfg.BOOK_PRICE_CENTS, lang))|replace('{ship}', fmt_eur(cfg.BOOK_SHIP_CENTS, lang))|replace('{per}', cfg.BOOK_PER_PARCEL|string)|replace('{ex2}', fmt_eur(book_min(2), lang))|replace('{ex3}', fmt_eur(book_min(3), lang)) }}</p>
         </div>
       </div>
       <form id="book-form" class="book-form" novalidate data-api="{{ url_for('api_book') }}" data-price="{{ cfg.BOOK_PRICE_CENTS }}" data-ship="{{ cfg.BOOK_SHIP_CENTS }}" data-per="{{ cfg.BOOK_PER_PARCEL }}" data-lang="{{ lang }}"
@@ -44,6 +44,10 @@
           <div class="field"><label for="b-qty">{{ t.book_qty }}</label><select id="b-qty" name="kolicina">{% for n in range(1, cfg.BOOK_MAX_QTY + 1) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select></div>
           <div class="field"><label for="b-amount">{{ t.book_amount }}</label><input type="text" id="b-amount" name="iznos" inputmode="decimal" value="{{ '%d,%02d' % (cfg.BOOK_UNIT_CENTS // 100, cfg.BOOK_UNIT_CENTS % 100) if lang == 'hr' else '%d.%02d' % (cfg.BOOK_UNIT_CENTS // 100, cfg.BOOK_UNIT_CENTS % 100) }}" required></div>
         </div>
+        <div id="b-deds" class="book-deds" data-label="{{ t.book_ded }}" data-label-n="{{ t.book_ded_n }}" data-ph="{{ t.book_ded_ph }}">
+          <div class="field"><label for="b-ded-1">{{ t.book_ded }}</label><input type="text" id="b-ded-1" name="posveta" maxlength="80" placeholder="{{ t.book_ded_ph }}"></div>
+        </div>
+        <p class="note">{{ t.book_ded_note }}</p>
         <label class="choice"><input type="checkbox" name="privatnost" id="b-priv" value="1" required> <span>{{ t.book_privacy|linkify('obavijest', url_for('privacy_hr') if lang == 'hr' else url_for('privacy_en'), t.f_privacy_link) }}</span></label>
         <p class="err" id="book-err" role="alert" hidden></p>
         <button type="submit" class="btn btn-gold" id="book-btn">{{ t.book_submit }}</button>

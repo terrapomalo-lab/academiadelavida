@@ -501,7 +501,7 @@ def test_old_applications_pay_current_fees(env):
 
 def book_form(**kw):
     d = {"lang": "hr", "ime": "Ana Anić", "email": "ana@example.com", "mobitel": "091 234 5678",
-         "paketomat": "BOX NOW Zagreb, Ilica 1", "kolicina": "1", "iznos": "42,90", "privatnost": "1"}
+         "paketomat": "BOX NOW Zagreb, Ilica 1", "kolicina": "1", "iznos": "38,00", "privatnost": "1"}
     d.update(kw)
     return d
 
@@ -509,11 +509,12 @@ def book_form(**kw):
 def test_book_order_flow(env):
     app, c, con = env
     html = c.get("/").get_data(as_text=True)
-    assert "Knjiga na dar uz donaciju" in html and "42,90 €" in html
+    assert "Knjiga na dar uz donaciju" in html and "38,00 €" in html and "73,00 €" in html and "108,00 €" in html
+    assert "42,90" not in html and "39,90" not in html
     r = c.post("/api/knjiga", data=book_form(kolicina="2", iznos="50"))
     assert r.status_code == 400 and "err_book_amount" in r.json["errors"]
-    assert "82,80 €" in r.json["message"]
-    assert S.book_min_cents(app.config, 3) == 12270 and S.book_min_cents(app.config, 4) == 16560
+    assert "73,00 €" in r.json["message"]
+    assert [S.book_min_cents(app.config, n) for n in (1, 2, 3, 4)] == [3800, 7300, 10800, 14600]
     r = c.post("/api/knjiga", data=book_form(iznos="45,00"))
     assert r.status_code == 200 and r.json["ok"]
     o = con.execute("SELECT * FROM book_orders").fetchone()
@@ -551,7 +552,7 @@ def test_book_manual_payment_and_short_amount(env):
     res = S.import_statement(con, app.config, "test", csv_.encode())
     assert res["review"] == 1 and con.execute("SELECT status FROM book_orders").fetchone()[0] == "pending"
     tok = login(c)
-    c.post("/admin/knjige", data={"csrf": tok, "order_id": o["id"], "action": "paid", "date": "2026-11-17", "amount": "42,90"})
+    c.post("/admin/knjige", data={"csrf": tok, "order_id": o["id"], "action": "paid", "date": "2026-11-17", "amount": "38,00"})
     assert con.execute("SELECT status FROM book_orders").fetchone()[0] == "paid"
 
 
@@ -701,3 +702,46 @@ def test_email_has_inline_payment_code(env):
         any(p.get_content_type() == "image/png" for p in msg.walk())
     assert msg.get_body(("plain",)).get_content().count("Iznos:") == 1
     assert any(p.get_filename() and p.get_filename().endswith(".pdf") for p in msg.iter_attachments())
+
+
+def test_book_dedications_and_codes(env):
+    import mailer, zxingcpp
+    from io import BytesIO
+    from PIL import Image
+    app, c, con = env
+    d = MultiDict(book_form(kolicina="2", iznos="73,00"))
+    d.add("posveta", "Ana")
+    d.add("posveta", "")
+    r = c.post("/api/knjiga", data=d)
+    assert r.status_code == 200
+    o = con.execute("SELECT * FROM book_orders").fetchone()
+    assert o["amount_cents"] == 7300 and S.book_dedications(con, o["id"]) == ["Ana", ""]
+    # kodovi za uplatu nose novi iznos
+    hub = zxingcpp.read_barcodes(Image.open(BytesIO(c.get(r.json["pay"]["hub3"]).data)))[0].text
+    assert "000000000007300" in hub and o["reference"] in hub
+    epc = zxingcpp.read_barcodes(Image.open(BytesIO(c.get(r.json["pay"]["epc"]).data)))[0].text
+    assert "EUR73.00" in epc
+    # e-mail potvrde i obavijest udruzi
+    row = con.execute("SELECT * FROM outbox WHERE kind='book_confirmation'").fetchone()
+    assert "Posveta: 1. Ana; 2. bez posvete" in row["body_text"] and "nakon 30. studenoga" in row["body_text"] and "73,00 €" in row["body_text"]
+    assert "Posvete: 1. Ana" in con.execute("SELECT body_text FROM outbox WHERE kind='notice'").fetchone()[0]
+    msg = mailer.build_message(con, app.config, row)
+    assert "cid:" in msg.get_body(("html",)).get_content()
+    # bez posvete: nema retka o posveti
+    c.post("/api/knjiga", data=book_form(email="b@example.com"))
+    b = con.execute("SELECT body_text FROM outbox WHERE kind='book_confirmation' ORDER BY id DESC").fetchone()[0]
+    assert "Posveta" not in b and "38,00 €" in b
+    # administracija i izvoz
+    login(c)
+    html = c.get("/admin/knjige").get_data(as_text=True)
+    assert "1. Ana" in html and "2. bez posvete" in html
+    x = c.get("/admin/knjige/izvoz.xlsx")
+    assert x.status_code == 200 and x.data[:2] == b"PK"
+    from openpyxl import load_workbook
+    rows = list(load_workbook(BytesIO(x.data)).active.values)
+    assert rows[1][7] == "1. Ana; 2. bez posvete" and rows[1][8] == 73.0
+    # engleske stranice
+    for u in ("/en/", "/en/book"):
+        h = c.get(u).get_data(as_text=True)
+        assert "€38.00" in h and "42.90" not in h, u
+    assert "€73.00" in c.get("/en/book").get_data(as_text=True)
