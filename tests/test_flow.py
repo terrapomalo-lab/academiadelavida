@@ -745,3 +745,13 @@ def test_book_dedications_and_codes(env):
         h = c.get(u).get_data(as_text=True)
         assert "€38.00" in h and "42.90" not in h, u
     assert "€73.00" in c.get("/en/book").get_data(as_text=True)
+
+
+def test_event_seating_note(env):
+    app, c, con = env
+    e = ev_setup(app)
+    assert "moguće je da ćete stajati" in c.get("/predstavljanje").get_data(as_text=True)
+    c.post("/api/predstavljanje", data=ev_form())
+    assert E.SEATING_NOTE in con.execute("SELECT body_text FROM outbox WHERE kind='event_confirmation'").fetchone()[0]
+    E.run_reminders(con, app.config, today=_date.fromisoformat(e["date"]) - _td(days=2))
+    assert E.SEATING_NOTE in con.execute("SELECT body_text FROM outbox WHERE kind='event_reminder'").fetchone()[0]

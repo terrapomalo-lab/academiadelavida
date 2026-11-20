@@ -275,3 +275,4 @@ footer .meta{color:#C9D3DE}
 .lbl{display:block;font-weight:600;margin-bottom:.4rem}
 #e-names .field{margin-top:.7rem}
 .book-deds{display:grid;gap:1rem}
+.ev-seat-note{border-left:3px solid var(--gold);padding-left:.8rem}

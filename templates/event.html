@@ -22,6 +22,7 @@
         <p>Rok za prijave bio je {{ fmt_date(e.reg_until, 'hr') }} Za upite pišite na <a href="mailto:{{ cfg.ORG_EMAIL }}">{{ cfg.ORG_EMAIL }}</a>.</p>
       {% else %}
       <h2>Prijava dolaska</h2>
+      <p class="ev-seat-note"><strong>Napomena:</strong> broj sjedećih mjesta u dvorani je ograničen i mjesta se ne rezerviraju unaprijed. Ako se sjedeća mjesta popune, moguće je da ćete stajati, pa vam preporučujemo da dođete ranije.</p>
       <p>Broj mjesta je ograničen. Prijave primamo do {{ fmt_date(e.reg_until, 'hr') }}
         {% if left > 0 %}<strong>Slobodnih mjesta: {{ left }}.</strong>{% else %}<strong>Sva su mjesta popunjena; nove prijave idu na listu čekanja.</strong>{% endif %}</p>
       <form id="ev-form" class="book-form" novalidate data-api="{{ url_for('api_event') }}" data-cents="{{ e.book_cents }}"

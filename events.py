@@ -12,6 +12,8 @@ NO_DEDICATION = "bez posvete"
 EVENT_RE = re.compile(r"(?<![\d-])8-(\d{4})-(\d{4})(?![\d-])")
 PHONE_RE = re.compile(r"^\+?[\d\s/()-]{8,20}$")
 
+SEATING_NOTE = "Broj sjedećih mjesta u dvorani je ograničen i mjesta se ne rezerviraju unaprijed. Ako se sjedeća mjesta popune, moguće je da ćete stajati, pa vam preporučujemo da dođete ranije."
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS event_regs (
   id INTEGER PRIMARY KEY,
@@ -313,7 +315,7 @@ def queue_confirmation(con, cfg, r):
     who = "Prijavili ste dolazak" + (" za sebe i još jednu osobu" if r["seats"] == 2 else "") + "."
     if r["status"] == "confirmed":
         s = "Potvrda prijave: predstavljanje knjige POMALO"
-        head = f"{who} Vaše mjesto je potvrđeno."
+        head = f"{who} Vaše mjesto je potvrđeno.\n\n{SEATING_NOTE}"
     else:
         s = "Lista čekanja: predstavljanje knjige POMALO"
         head = (f"{who} Sva su mjesta trenutačno popunjena pa ste na listi čekanja. "
@@ -357,7 +359,7 @@ def email_reminder(cfg, r, names):
     elif r["book_qty"] and r["book_status"] == "pending":
         book = f"\nUplatu za knjigu s posvetom ({r['reference']}) još nismo zaprimili.\n"
     b = (f"Dobar dan, {r['full_name']},\n\npodsjećamo vas na predstavljanje knjige „{ev(cfg)['title']}”.\n\n"
-         f"Kada i gdje: {_when(cfg)}.\n" + book +
+         f"Kada i gdje: {_when(cfg)}.\n\n{SEATING_NOTE}\n" + book +
          f"\nAko ne možete doći, molimo vas da se odjavite, kako bi mjesto dobio netko s liste čekanja:\n{_cancel_link(cfg, r)}"
          + i18n._sig("hr"))
     return s, b
