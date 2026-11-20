@@ -662,7 +662,7 @@ def test_event_reminder_deadline_and_admin(env):
     assert E.run_reminders(con, app.config, today=_date.fromisoformat(e["date"]) - _td(days=2)) == 0
     tok = login(c)
     html = c.get("/admin/predstavljanje").get_data(as_text=True)
-    assert "Iva Ivić" in html and "Teta Mira" in html and "Zauzeto mjesta: 1 / 100" in html
+    assert "Iva Ivić" in html and "Teta Mira" in html and "Zauzeto mjesta: 1 / 200" in html
     rid = con.execute("SELECT id FROM event_regs").fetchone()[0]
     c.post("/admin/predstavljanje", data={"csrf": tok, "reg_id": rid, "action": "paid", "date": "2026-11-21", "amount": "39,90"})
     assert con.execute("SELECT book_status FROM event_regs").fetchone()[0] == "paid"
@@ -755,3 +755,19 @@ def test_event_seating_note(env):
     assert E.SEATING_NOTE in con.execute("SELECT body_text FROM outbox WHERE kind='event_confirmation'").fetchone()[0]
     E.run_reminders(con, app.config, today=_date.fromisoformat(e["date"]) - _td(days=2))
     assert E.SEATING_NOTE in con.execute("SELECT body_text FROM outbox WHERE kind='event_reminder'").fetchone()[0]
+
+
+def test_event_raise_capacity_and_notify(env):
+    app, c, con = env
+    ev_setup(app, capacity=2, notify_at=1)
+    c.post("/api/predstavljanje", data=ev_form(email="a@example.com"))
+    c.post("/api/predstavljanje", data=ev_form(email="b@example.com"))
+    c.post("/api/predstavljanje", data=ev_form(email="w@example.com"))
+    assert con.execute("SELECT status FROM event_regs WHERE email='w@example.com'").fetchone()[0] == "waitlist"
+    notes = [r[0] for r in con.execute("SELECT subject FROM outbox WHERE kind='notice'")]
+    assert sum("više od 1" in n for n in notes) == 1
+    ev_setup(app, capacity=5, notify_at=1)
+    login(c)
+    assert "w@example.com" not in c.get("/admin/predstavljanje").get_data(as_text=True).split("Lista čekanja (")[1][:200]
+    assert con.execute("SELECT status FROM event_regs WHERE email='w@example.com'").fetchone()[0] == "confirmed"
+    assert "Slobodnih mjesta" not in c.get("/predstavljanje").get_data(as_text=True)

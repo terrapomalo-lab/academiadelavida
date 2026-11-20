@@ -64,7 +64,8 @@ class Config:
         "title": "POMALO – Mediteransko umijeće življenja",
         "date": "2026-11-30", "weekday": "ponedjeljak", "time": "13:30",
         "place": "Velika sjednička dvorana HAZU, Trg Nikole Šubića Zrinskog 11, Zagreb",
-        "capacity": 100,
+        "capacity": 200,             # prijave (sjedeća + stajaća mjesta)
+        "notify_at": 120,            # obavijest udruzi kad broj prijavljenih osoba prijeđe ovaj broj
         "reg_until": "2026-11-26",     # zadnji dan prijava
         "book_until": "2026-11-25",    # rok za uplatu i predbilježbu knjige s posvetom
         "book_cents": int(_env("ADV_EVENT_BOOK_CENTS", "3500")),   # donacija po primjerku (35 €)

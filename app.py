@@ -734,6 +734,17 @@ def create_app(overrides=None):
     @admin_required
     def admin_event():
         con = DB.get_db()
+        if request.method == "GET" and con.execute("SELECT 1 FROM event_regs WHERE status='waitlist' LIMIT 1").fetchone():
+            con.execute("BEGIN IMMEDIATE")
+            try:
+                prom = E.promote(con, cfg)
+                con.execute("COMMIT")
+            except Exception:
+                con.execute("ROLLBACK")
+                raise
+            if prom:
+                mailer.send_outbox(con, cfg, batch=20)
+                flash(f"Lista čekanja: mjesto su dobili {', '.join(p['full_name'] for p in prom)} (poslan im je e-mail).", "ok")
         if request.method == "POST":
             r = E.get(con, int(request.form.get("reg_id", "0") or 0))
             action = request.form.get("action")

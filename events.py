@@ -12,7 +12,8 @@ NO_DEDICATION = "bez posvete"
 EVENT_RE = re.compile(r"(?<![\d-])8-(\d{4})-(\d{4})(?![\d-])")
 PHONE_RE = re.compile(r"^\+?[\d\s/()-]{8,20}$")
 
-SEATING_NOTE = "Broj sjedećih mjesta u dvorani je ograničen i mjesta se ne rezerviraju unaprijed. Ako se sjedeća mjesta popune, moguće je da ćete stajati, pa vam preporučujemo da dođete ranije."
+SEATING_NOTE = ("Broj sjedećih mjesta u dvorani je ograničen i mjesta se ne rezerviraju unaprijed; prednost pri sjedenju imaju starije osobe. "
+                "Ako se sjedeća mjesta popune, moguće je da ćete stajati.")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS event_regs (
@@ -122,6 +123,8 @@ def create(con, cfg, d, ip=None):
         if dup:
             con.execute("ROLLBACK")
             return None
+        promote(con, cfg)   # ako je granica podignuta, lista čekanja dobiva mjesta prije novih prijava
+        before = seats_taken(con, cfg)
         status = "confirmed" if seats_left(con, cfg) >= d["seats"] and not _waitlist_nonempty(con, cfg) else "waitlist"
         seq = con.execute("SELECT COALESCE(MAX(seq),0)+1 FROM event_regs WHERE event=?", (e["key"],)).fetchone()[0]
         ref = f"8-{e['date'][:4]}-{seq:04d}"
@@ -134,6 +137,12 @@ def create(con, cfg, d, ip=None):
         for i, n in enumerate(d["names"], 1):
             con.execute("INSERT INTO event_dedications(reg_id, pos, name) VALUES (?,?,?)", (rid, i, n))
         r = get(con, rid)
+        after = seats_taken(con, cfg)
+        lim = e.get("notify_at")
+        if lim and before <= lim < after and cfg.get("NOTIFY_TO"):
+            S.queue_email(con, "notice", cfg["NOTIFY_TO"], f"Predstavljanje: prijavljeno više od {lim} osoba",
+                          f"Broj prijavljenih osoba za predstavljanje knjige prešao je {lim} (sada: {after}; najviše {e['capacity']}).\n\n"
+                          f"Administracija: {cfg['BASE_URL']}/admin/predstavljanje")
         queue_confirmation(con, cfg, r)
         queue_admin_notice(con, cfg, r)
         audit(con, "web", "event_reg", f"{ref} {status}")
