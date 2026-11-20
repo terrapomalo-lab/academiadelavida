@@ -781,3 +781,11 @@ def test_short_membership_address(env):
         html = r.get_data(as_text=True)
         assert 'data-focus="clanstvo"' in html and 'id="clanstvo"' in html and 'id="pristupnica"' in html
     assert 'data-focus=' not in c.get("/").get_data(as_text=True)
+
+
+def test_short_donation_url(env):
+    app, c, con = env
+    for u in ("/donacija", "/en/donate"):
+        h = c.get(u).get_data(as_text=True)
+        assert 'data-focus="donacija"' in h and 'id="donacija"' in h, u
+    assert c.get("/donacija/uplatnica.pdf?iznos=10.00").status_code == 200

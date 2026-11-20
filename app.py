@@ -100,6 +100,14 @@ def create_app(overrides=None):
     def membership_en():
         return page("en", focus="clanstvo")
 
+    @app.get("/donacija")
+    def donate_hr():
+        return page("hr", focus="donacija")
+
+    @app.get("/en/donate")
+    def donate_en():
+        return page("en", focus="donacija")
+
     # ------------------------------------------------------------ predstavljanje knjige
     @app.get("/predstavljanje")
     def event_page():

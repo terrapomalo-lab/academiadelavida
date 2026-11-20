@@ -164,6 +164,7 @@
   <div class="wrap support">
     <div class="sec-head"><h2>{{ t.support_h }}</h2><p>{{ t.support_p }}</p><p>{{ t.support_sep }}</p></div>
     {% if book_active %}{% include "_book.html" %}{% endif %}
+    <h3 class="don-h" id="donacija">{{ t.don_h }}</h3>
     <div class="don" id="don" data-lang="{{ lang }}" data-hub3="{{ url_for('don_hub3') }}" data-epc="{{ url_for('don_epc') }}" data-pdf="{{ url_for('don_pdf') }}"
          data-err="{{ t.don_err }}" data-copied="{{ t.copied }}">
       <div class="chips" role="group" aria-label="{{ t.don_amount }}">
