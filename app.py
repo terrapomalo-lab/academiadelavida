@@ -73,8 +73,8 @@ def create_app(overrides=None):
         return request.headers.get("X-Real-IP") or request.remote_addr or "?"
 
     # ------------------------------------------------------------ javne stranice
-    def page(lang, focus=None):
-        return render_template("index.html", t=i18n.T[lang], lang=lang, focus=focus,
+    def page(lang):
+        return render_template("index.html", t=i18n.T[lang], lang=lang,
                                alt_url=url_for("index_en") if lang == "hr" else url_for("index_hr"),
                                privacy_url=url_for("privacy_hr") if lang == "hr" else url_for("privacy_en"))
 
@@ -89,16 +89,6 @@ def create_app(overrides=None):
     @app.get("/en")
     def index_en_noslash():
         return redirect(url_for("index_en"), 301)
-
-    # Kratke adrese za QR kodove (vizitke): otvaraju naslovnicu i same se spuštaju na članstvo,
-    # bez oslanjanja na „#” u adresi, koji neki čitači QR kodova ne prenose.
-    @app.get("/clanstvo")
-    def membership_hr():
-        return page("hr", focus="clanstvo")
-
-    @app.get("/en/membership")
-    def membership_en():
-        return page("en", focus="clanstvo")
 
     # ------------------------------------------------------------ predstavljanje knjige
     @app.get("/predstavljanje")
