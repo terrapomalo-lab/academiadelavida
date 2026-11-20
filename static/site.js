@@ -1,6 +1,17 @@
 (function () {
   "use strict";
 
+  // Kratke adrese (/clanstvo): stranica se sama spušta na traženi dio, i nakon učitavanja slika.
+  var focusId = document.body && document.body.getAttribute("data-focus");
+  if (focusId) {
+    var goTo = function () {
+      var el = document.getElementById(focusId);
+      if (el) el.scrollIntoView({ block: "start", behavior: "instant" });
+    };
+    goTo();
+    window.addEventListener("load", goTo);
+  }
+
   function oibValid(o) {
     if (!/^\d{11}$/.test(o)) return false;
     var a = 10;

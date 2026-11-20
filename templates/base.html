@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='site.css') }}?v=10">
 {% block head %}{% endblock %}
 </head>
-<body>
+<body{% if focus %} data-focus="{{ focus }}"{% endif %}>
 <a class="skip" href="#sadrzaj">{{ 'Preskoči na sadržaj' if lang == 'hr' else 'Skip to content' }}</a>
 <header class="top">
   <div class="wrap">
@@ -36,6 +36,6 @@
     {% set socials = cfg.SOCIAL_LINKS|selectattr(1)|list %}{% if socials %}<span class="meta">{% for name, url in socials %}<a href="{{ url }}" target="_blank" rel="noopener">{{ name }}</a>{{ ' · ' if not loop.last }}{% endfor %}</span>{% endif %}
   </div>
 </footer>
-<script src="{{ url_for('static', filename='site.js') }}?v=9" defer></script>
+<script src="{{ url_for('static', filename='site.js') }}?v=10" defer></script>
 </body>
 </html>
