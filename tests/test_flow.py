@@ -771,3 +771,13 @@ def test_event_raise_capacity_and_notify(env):
     assert "w@example.com" not in c.get("/admin/predstavljanje").get_data(as_text=True).split("Lista čekanja (")[1][:200]
     assert con.execute("SELECT status FROM event_regs WHERE email='w@example.com'").fetchone()[0] == "confirmed"
     assert "Slobodnih mjesta" not in c.get("/predstavljanje").get_data(as_text=True)
+
+
+def test_short_membership_address(env):
+    app, c, con = env
+    for url in ["/clanstvo", "/en/membership"]:
+        r = c.get(url)
+        assert r.status_code == 200, url
+        html = r.get_data(as_text=True)
+        assert 'data-focus="clanstvo"' in html and 'id="clanstvo"' in html and 'id="pristupnica"' in html
+    assert 'data-focus=' not in c.get("/").get_data(as_text=True)
