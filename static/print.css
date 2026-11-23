@@ -5,3 +5,9 @@ th,td{border:1px solid #888;padding:2.2mm 2mm;text-align:left;vertical-align:top
 th{background:#eee}
 td.box{width:8mm}
 @media print{.noprint{display:none}}
+
+.slips{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.slip{border:1px dashed #555;padding:5mm 5mm;height:48mm;box-sizing:border-box;break-inside:avoid;page-break-inside:avoid;overflow:hidden}
+.slip-ded{font-size:20pt;font-weight:bold;margin-bottom:3mm;line-height:1.15}
+.slip-meta{font-size:10pt;margin-top:1mm}
+@media print{body{margin:10mm}.slips{gap:0}}

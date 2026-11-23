@@ -2,7 +2,7 @@
 {% block title %}Knjige{% endblock %}
 {% block main %}
 <h1>Knjige uz donaciju</h1>
-<p><a href="{{ url_for('admin_books_xlsx') }}">Izvoz svih narudžbi u Excel</a></p>
+<p><a href="{{ url_for('admin_books_xlsx') }}">Izvoz svih narudžbi u Excel</a> · <a href="{{ url_for('admin_signing') }}">Potpisivanje: popis i ceduljice</a></p>
 <p class="muted">Kad donacija stigne (uvoz izvoda s pozivom na broj 7-…, ili ručno ovdje), donator dobiva zahvalu, a zahtjev prelazi u „za slanje“. Pošiljku izradite u BOX NOW-u za navedeni paketomat, zatim ovdje upišite broj pošiljke i kliknite „Poslano“ – donator dobiva obavijest.</p>
 {% set groups = [('paid','Plaćeno – za slanje'),('pending','Čeka uplatu'),('shipped','Poslano'),('cancelled','Otkazano')] %}
 {% for st, label in groups %}

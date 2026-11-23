@@ -801,3 +801,19 @@ def test_event_admin_resend_and_pdf_link(env):
     rid = con.execute("SELECT id FROM event_regs").fetchone()[0]
     c.post("/admin/predstavljanje", data={"csrf": tok, "reg_id": rid, "action": "resend"})
     assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='event_confirmation'").fetchone()[0] == 2
+
+
+def test_signing_list_and_slips(env):
+    app, c, con = env
+    ev_setup(app)
+    c.post("/api/predstavljanje", data=ev_form(names=["Zora", ""]))
+    d = MultiDict(book_form(kolicina="1", iznos="38,00"))
+    d.add("posveta", "Ana")
+    c.post("/api/knjiga", data=d)
+    login(c)
+    h = c.get("/admin/potpisivanje").get_data(as_text=True)
+    body = h[h.index("<tbody>"):]
+    assert body.index("<strong>Ana") < body.index("<strong>Zora") < body.index("bez posvete") and "BOX NOW" in body and "ČEKA UPLATU" in body
+    s = c.get("/admin/potpisivanje?ceduljice=1").get_data(as_text=True)
+    assert s.count('class="slip"') == 3 and "primjerak 1/2" in s and "built-in" not in s + h
+    assert c.get("/admin/potpisivanje?placeno=1").get_data(as_text=True).count("<tr><td class=\"box\">") == 0

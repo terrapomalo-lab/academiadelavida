@@ -1,0 +1,31 @@
+<!doctype html><html lang="hr"><head><meta charset="utf-8"><title>Potpisivanje knjiga</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='print.css') }}?v=2"></head><body>
+<div class="noprint">
+  <p><a href="{{ url_for('admin_event') }}">← Natrag u administraciju</a></p>
+  <p><strong>{{ 'Ceduljice' if slips else 'Popis' }} · {{ 'samo plaćene' if only_paid else 'sve (plaćene i one koje čekaju uplatu)' }}</strong> · primjeraka: {{ rows|length }}</p>
+  <p>Prikaži:
+    <a href="?ceduljice=0&placeno={{ '1' if only_paid else '0' }}">popis</a> ·
+    <a href="?ceduljice=1&placeno={{ '1' if only_paid else '0' }}">ceduljice za izrezati</a> ·
+    <a href="?ceduljice={{ '1' if slips else '0' }}&placeno=0">sve</a> ·
+    <a href="?ceduljice={{ '1' if slips else '0' }}&placeno=1">samo plaćene</a></p>
+  <p><button id="print-btn" type="button">Ispiši</button></p>
+</div>
+{% if not slips %}
+<h1>Potpisivanje knjiga POMALO</h1>
+<p>Primjeraka: {{ rows|length }} (s posvetom: {{ rows|selectattr('ded')|list|length }}, bez posvete: {{ rows|rejectattr('ded')|list|length }})</p>
+<table><thead><tr><th>✓</th><th>Posveta (za koga)</th><th>Naručitelj</th><th>Broj</th><th>Kom.</th><th>Preuzimanje</th><th>Uplata</th></tr></thead><tbody>
+{% for x in rows %}<tr><td class="box"></td><td>{% if x.ded %}<strong>{{ x.ded }}</strong>{% else %}<em>bez posvete</em>{% endif %}</td><td>{{ x.buyer }}</td><td>{{ x.ref }}</td><td>{{ x.nr }}</td><td>{{ x.how }}</td><td>{{ 'plaćeno' if x.paid else 'ČEKA UPLATU' }}</td></tr>{% endfor %}
+</tbody></table>
+{% else %}
+<div class="slips">
+{% for x in rows %}<div class="slip">
+  <div class="slip-ded">{% if x.ded %}{{ x.ded }}{% else %}<em>bez posvete</em>{% endif %}</div>
+  <div class="slip-meta">Naručitelj: <strong>{{ x.buyer }}</strong></div>
+  <div class="slip-meta">{{ x.ref }} · primjerak {{ x.nr }}</div>
+  <div class="slip-meta">{{ x.how }}</div>
+  <div class="slip-meta">{{ 'plaćeno' if x.paid else 'ČEKA UPLATU' }}</div>
+</div>{% endfor %}
+</div>
+{% endif %}
+<script src="{{ url_for('static', filename='print.js') }}"></script>
+</body></html>

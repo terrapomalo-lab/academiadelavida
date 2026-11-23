@@ -806,6 +806,36 @@ def create_app(overrides=None):
                                fmt_eur=P.fmt_eur, today=date.today().isoformat(),
                                public_url=cfg["BASE_URL"] + url_for("event_page"))
 
+    # --- potpisivanje knjiga: jedan red / jedna ceduljica po primjerku (predstavljanje + knjige uz donaciju)
+    def _signing_rows(con, only_paid):
+        rows = []
+        for r in con.execute("SELECT * FROM event_regs WHERE book_qty>0 AND book_status IN ('pending','paid')").fetchall():
+            if only_paid and r["book_status"] != "paid":
+                continue
+            names = E.dedications(con, r["id"])
+            for i, n in enumerate(names, 1):
+                rows.append({"ded": "" if n == E.NO_DEDICATION else n, "buyer": r["full_name"], "ref": r["reference"],
+                             "nr": f"{i}/{len(names)}", "how": "preuzimanje na predstavljanju",
+                             "paid": r["book_status"] == "paid"})
+        for o in con.execute("SELECT * FROM book_orders WHERE status IN ('pending','paid')").fetchall():
+            if only_paid and o["status"] != "paid":
+                continue
+            names = S.book_dedications(con, o["id"]) or [""] * o["qty"]
+            for i, n in enumerate(names, 1):
+                rows.append({"ded": n, "buyer": o["full_name"], "ref": o["reference"], "nr": f"{i}/{len(names)}",
+                             "how": f"BOX NOW: {o['locker']}", "paid": o["status"] == "paid"})
+        # s posvetom abecedno po imenu za posvetu, zatim bez posvete po naručitelju
+        rows.sort(key=lambda x: (0, x["ded"].lower()) if x["ded"] else (1, x["buyer"].lower()))
+        return rows
+
+    @app.get("/admin/potpisivanje")
+    @admin_required
+    def admin_signing():
+        only_paid = request.args.get("placeno") == "1"
+        rows = _signing_rows(DB.get_db(), only_paid)
+        return render_template("admin/signing.html", rows=rows, only_paid=only_paid,
+                               slips=request.args.get("ceduljice") == "1")
+
     @app.get("/admin/predstavljanje/ispis/<which>")
     @admin_required
     def admin_event_print(which):
