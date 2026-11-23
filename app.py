@@ -779,6 +779,10 @@ def create_app(overrides=None):
                         return redirect(url_for("admin_event"))
                     ok = E.mark_paid(con, cfg, g.admin, r, bdate, amt)
                     msg = "Uplata je evidentirana; donator je dobio potvrdu. Knjigu možete potpisati." if ok else "Predbilježba nije u stanju „čeka uplatu“."
+                elif action == "resend":
+                    E.queue_confirmation(con, cfg, r)
+                    DB.audit(con, g.admin, "event_resend", r["reference"])
+                    ok, msg = True, f"Potvrda s podacima za uplatu ponovno je poslana na {r['email']}."
                 elif action == "cancel":
                     prom = E.cancel(con, cfg, r, g.admin)
                     ok, msg = True, "Prijava je odjavljena." + (f" Mjesto je dobio/la: {', '.join(p['full_name'] for p in prom)}." if prom else "")
@@ -793,7 +797,11 @@ def create_app(overrides=None):
             flash(msg, "ok" if ok else "err")
             return redirect(url_for("admin_event"))
         regs, ded, confirmed, waitlist, dedrows = _event_lists(con)
-        return render_template("admin/event.html", e=cfg["EVENT"], confirmed=confirmed, waitlist=waitlist, dedrows=dedrows, ded=ded,
+        mail = {}   # zadnja potvrda po e-mail adresi: poslano / nije poslano
+        for m in con.execute("""SELECT to_addr, status, last_error FROM outbox
+                                WHERE kind IN ('event_confirmation','event_promoted') ORDER BY id"""):
+            mail[m["to_addr"]] = m
+        return render_template("admin/event.html", e=cfg["EVENT"], mail=mail, confirmed=confirmed, waitlist=waitlist, dedrows=dedrows, ded=ded,
                                cancelled=[r for r in regs if r["status"] == "cancelled"], taken=E.seats_taken(con, cfg),
                                fmt_eur=P.fmt_eur, today=date.today().isoformat(),
                                public_url=cfg["BASE_URL"] + url_for("event_page"))

@@ -12,10 +12,12 @@
 
 <h2>Dolaze ({{ confirmed|length }} prijava, {{ taken }} osoba)</h2>
 {% if not confirmed %}<p class="muted">Još nema prijava.</p>{% else %}
-<div class="tbl"><table><thead><tr><th>Ime i prezime</th><th>Osoba</th><th>Broj</th><th>Kontakt</th><th>Knjige</th><th>Radnja</th></tr></thead><tbody>
+<div class="tbl"><table><thead><tr><th>Ime i prezime</th><th>Osoba</th><th>Broj</th><th>Kontakt</th><th>Knjige</th><th>Potvrda i radnja</th></tr></thead><tbody>
 {% for r in confirmed %}<tr><td>{{ r.full_name }}</td><td class="num">{{ r.seats }}</td><td>{{ r.reference }}</td><td>{{ r.email }}<br>{{ r.phone }}</td>
 <td>{% if r.book_qty %}{{ r.book_qty }} · {{ 'plaćeno' if r.book_status == 'paid' else 'čeka uplatu' if r.book_status == 'pending' else 'otkazano' }}{% endif %}</td>
-<td><form method="post"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="reg_id" value="{{ r.id }}"><button class="btn sec sm" name="action" value="cancel">Odjavi</button></form></td></tr>{% endfor %}
+<td>{% set m = mail.get(r.email) %}{% if m %}<span class="pill {{ 'p-paid' if m.status == 'sent' else 'p-open' }}" title="{{ m.last_error or '' }}">e-mail {{ 'poslan' if m.status == 'sent' else 'NIJE poslan' }}</span><br>{% endif %}
+{% if r.book_qty and r.book_status == 'pending' %}<a href="{{ url_for('event_pdf', token=r.token) }}">PDF uplatnica</a><br>{% endif %}
+<form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="reg_id" value="{{ r.id }}"><button class="btn sec sm" name="action" value="resend">Ponovno pošalji potvrdu</button><button class="btn sec sm" name="action" value="cancel">Odjavi</button></form></td></tr>{% endfor %}
 </tbody></table></div>{% endif %}
 
 <h2>Lista čekanja ({{ waitlist|length }})</h2>

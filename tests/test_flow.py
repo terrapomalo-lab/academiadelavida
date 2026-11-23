@@ -789,3 +789,15 @@ def test_short_donation_url(env):
         h = c.get(u).get_data(as_text=True)
         assert 'data-focus="donacija"' in h and 'id="donacija"' in h, u
     assert c.get("/donacija/uplatnica.pdf?iznos=10.00").status_code == 200
+
+
+def test_event_admin_resend_and_pdf_link(env):
+    app, c, con = env
+    ev_setup(app)
+    c.post("/api/predstavljanje", data=ev_form(names=["Mama"]))
+    tok = login(c)
+    html = c.get("/admin/predstavljanje").get_data(as_text=True)
+    assert "PDF uplatnica" in html and "Ponovno pošalji potvrdu" in html and "e-mail" in html
+    rid = con.execute("SELECT id FROM event_regs").fetchone()[0]
+    c.post("/admin/predstavljanje", data={"csrf": tok, "reg_id": rid, "action": "resend"})
+    assert con.execute("SELECT COUNT(*) FROM outbox WHERE kind='event_confirmation'").fetchone()[0] == 2
