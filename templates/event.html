@@ -23,7 +23,7 @@
       {% else %}
       <h2>Prijava dolaska</h2>
       <p class="ev-seat-note"><strong>Napomena:</strong> broj sjedećih mjesta u dvorani je ograničen i mjesta se ne rezerviraju unaprijed; prednost pri sjedenju imaju starije osobe. Ako se sjedeća mjesta popune, moguće je da ćete stajati.</p>
-      <p>Prijave primamo do {{ fmt_date(e.reg_until, 'hr') }}.
+      <p>Prijave primamo do {{ fmt_date(e.reg_until, 'hr') }}
         {% if left <= 0 %}<strong>Sva su mjesta popunjena; nove prijave idu na listu čekanja.</strong>{% endif %}</p>
       <form id="ev-form" class="book-form" novalidate data-api="{{ url_for('api_event') }}" data-cents="{{ e.book_cents }}"
             data-msg='{{ {"err_prefix": "Molimo provjerite:", "server": t.err_server|replace("{email}", cfg.ORG_EMAIL), "sending": t.f_sending, "submit": "Pošalji prijavu", "code_hr": t.code_hr, "code_eu": t.code_eu, "dl_png": t.dl_png, "dl_pdf": t.dl_pdf, "copy": t.copy_btn, "copied": t.copied}|tojson|forceescape }}'>
