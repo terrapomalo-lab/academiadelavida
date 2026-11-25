@@ -66,8 +66,8 @@ class Config:
         "place": "Velika sjednička dvorana HAZU, Trg Nikole Šubića Zrinskog 11, Zagreb",
         "capacity": 200,             # prijave (sjedeća + stajaća mjesta)
         "notify_at": 120,            # obavijest udruzi kad broj prijavljenih osoba prijeđe ovaj broj
-        "reg_until": "2026-11-26",     # zadnji dan prijava
-        "book_until": "2026-11-25",    # rok za uplatu i predbilježbu knjige s posvetom
+        "reg_until": "2026-11-28",     # zadnji dan prijava (produženo s 26. 11.)
+        "book_until": "2026-11-28",    # rok za uplatu i predbilježbu knjige s posvetom (produženo s 25. 11.)
         "book_cents": int(_env("ADV_EVENT_BOOK_CENTS", "3500")),   # donacija po primjerku (35 €)
         "max_copies": 10,
         "remind_days_before": 2,
