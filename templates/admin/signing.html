@@ -1,20 +1,35 @@
 <!doctype html><html lang="hr"><head><meta charset="utf-8"><title>Potpisivanje knjiga</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='print.css') }}?v=2"></head><body>
+<link rel="stylesheet" href="{{ url_for('static', filename='print.css') }}?v=3"></head><body>
 <div class="noprint">
-  <p><a href="{{ url_for('admin_event') }}">← Natrag u administraciju</a></p>
-  <p><strong>{{ 'Ceduljice' if slips else 'Popis' }} · {{ 'samo plaćene' if only_paid else 'sve (plaćene i one koje čekaju uplatu)' }}</strong> · primjeraka: {{ rows|length }}</p>
+  <p><a href="{{ url_for('admin_event') }}">← Natrag u administraciju</a> · <a href="{{ url_for('admin_dedications') }}">Izmjena posveta</a></p>
+  {% set q = '&nove=' ~ mode ~ ('&od=' ~ request.args.get('od') if request.args.get('od') else '') %}
+  <form method="get" class="filter">
+    <input type="hidden" name="ceduljice" value="{{ '1' if slips else '0' }}"><input type="hidden" name="placeno" value="{{ '1' if only_paid else '0' }}">
+    <p><strong>Što ispisati:</strong><br>
+    <label><input type="radio" name="nove" value="1" {{ 'checked' if mode == '1' }}> samo NOVE – zaprimljene ili s izmijenjenom posvetom nakon:</label>
+    <input type="datetime-local" name="od" value="{{ since.strftime('%Y-%m-%dT%H:%M') if since else '' }}">
+    {% if last %}<span class="muted">(zadnji predani popis: {{ last.strftime('%d. %m. %Y. %H:%M') }})</span>{% else %}<span class="muted">(još nijedan popis nije označen kao predan – upišite otprilike kad je prvi popis ispisan)</span>{% endif %}<br>
+    <label><input type="radio" name="nove" value="0" {{ 'checked' if mode != '1' }}> SVE knjige od početka</label>
+    <button type="submit">Prikaži</button></p>
+  </form>
+  <p><strong>{{ 'Ceduljice' if slips else 'Popis' }} · {{ 'samo plaćene' if only_paid else 'plaćene i one koje čekaju uplatu' }} · {% if since %}samo nove nakon {{ since.strftime('%d. %m. %Y. %H:%M') }}{% else %}sve od početka{% endif %}</strong> · primjeraka: {{ rows|length }}</p>
   <p>Prikaži:
-    <a href="?ceduljice=0&placeno={{ '1' if only_paid else '0' }}">popis</a> ·
-    <a href="?ceduljice=1&placeno={{ '1' if only_paid else '0' }}">ceduljice za izrezati</a> ·
-    <a href="?ceduljice={{ '1' if slips else '0' }}&placeno=0">sve</a> ·
-    <a href="?ceduljice={{ '1' if slips else '0' }}&placeno=1">samo plaćene</a></p>
+    <a href="?ceduljice=0&placeno={{ '1' if only_paid else '0' }}{{ q }}">popis</a> ·
+    <a href="?ceduljice=1&placeno={{ '1' if only_paid else '0' }}{{ q }}">ceduljice za izrezati</a> ·
+    <a href="?ceduljice={{ '1' if slips else '0' }}&placeno=0{{ q }}">plaćene i neplaćene</a> ·
+    <a href="?ceduljice={{ '1' if slips else '0' }}&placeno=1{{ q }}">samo plaćene</a></p>
   <p><button id="print-btn" type="button">Ispiši</button></p>
+  <form method="post" action="{{ url_for('admin_signing_done') }}" class="done">
+    <input type="hidden" name="csrf" value="{{ csrf_token() }}"><input type="hidden" name="upto" value="{{ upto }}">
+    <button type="submit">Nakon ispisa: označi da je sve dosad predano Vidi</button>
+    <span class="muted">Sljedeći put „samo nove“ kreće od ovog trenutka. Kliknite tek kad je ispis predan.</span>
+  </form>
 </div>
 {% if not slips %}
-<h1>Potpisivanje knjiga POMALO</h1>
+<h1>Potpisivanje knjiga POMALO{% if since %} – NOVE nakon {{ since.strftime('%d. %m. %Y. %H:%M') }}{% endif %}</h1>
 <p>Primjeraka: {{ rows|length }} (s posvetom: {{ rows|selectattr('ded')|list|length }}, bez posvete: {{ rows|rejectattr('ded')|list|length }})</p>
-<table><thead><tr><th>✓</th><th>Posveta (za koga)</th><th>Naručitelj</th><th>Broj</th><th>Kom.</th><th>Preuzimanje</th><th>Uplata</th></tr></thead><tbody>
-{% for x in rows %}<tr><td class="box"></td><td>{% if x.ded %}<strong>{{ x.ded }}</strong>{% else %}<em>bez posvete</em>{% endif %}</td><td>{{ x.buyer }}</td><td>{{ x.ref }}</td><td>{{ x.nr }}</td><td>{{ x.how }}</td><td>{{ 'plaćeno' if x.paid else 'ČEKA UPLATU' }}</td></tr>{% endfor %}
+<table><thead><tr><th>✓</th><th>Posveta (za koga)</th><th>Naručitelj</th><th>Broj</th><th>Kom.</th><th>Preuzimanje</th><th>Uplata</th><th>Zaprimljeno</th></tr></thead><tbody>
+{% for x in rows %}<tr><td class="box"></td><td>{% if x.ded %}<strong>{{ x.ded }}</strong>{% else %}<em>bez posvete</em>{% endif %}</td><td>{{ x.buyer }}</td><td>{{ x.ref }}</td><td>{{ x.nr }}</td><td>{{ x.how }}</td><td>{{ 'plaćeno' if x.paid else 'ČEKA UPLATU' }}</td><td>{{ x.created_dt.strftime('%d. %m. %H:%M') }}{% if since and x.edited_dt and x.edited_dt > since and x.created_dt <= since %}<br><strong>IZMIJENJENA POSVETA</strong>{% endif %}</td></tr>{% endfor %}
 </tbody></table>
 {% else %}
 <div class="slips">
@@ -23,7 +38,7 @@
   <div class="slip-meta">Naručitelj: <strong>{{ x.buyer }}</strong></div>
   <div class="slip-meta">{{ x.ref }} · primjerak {{ x.nr }}</div>
   <div class="slip-meta">{{ x.how }}</div>
-  <div class="slip-meta">{{ 'plaćeno' if x.paid else 'ČEKA UPLATU' }}</div>
+  <div class="slip-meta">{{ 'plaćeno' if x.paid else 'ČEKA UPLATU' }}{% if since and x.edited_dt and x.edited_dt > since and x.created_dt <= since %} · <strong>IZMIJENJENA POSVETA</strong>{% endif %}</div>
 </div>{% endfor %}
 </div>
 {% endif %}

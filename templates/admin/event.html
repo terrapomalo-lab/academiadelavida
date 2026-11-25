@@ -6,7 +6,7 @@
 <p class="muted">Poveznica za prijavu: <a href="{{ public_url }}" target="_blank">{{ public_url }}</a> ·
   <a href="{{ url_for('admin_event_qr') }}">Preuzmi QR kod (PNG)</a> ·
   <a href="{{ url_for('admin_event_xlsx') }}">Izvoz u Excel (sva tri popisa)</a></p>
-<p><strong><a href="{{ url_for('admin_signing') }}">Potpisivanje knjiga: popis i ceduljice za izrezati</a></strong> (sve knjige s predstavljanja i s narudžbi uz donaciju)</p>
+<p><strong><a href="{{ url_for('admin_signing') }}">Potpisivanje knjiga: popis i ceduljice za izrezati</a></strong> (sve knjige s predstavljanja i s narudžbi uz donaciju) · <a href="{{ url_for('admin_dedications') }}">Izmjena posveta</a></p>
 <p class="muted">Ispis: <a href="{{ url_for('admin_event_print', which='ulaz') }}" target="_blank">stol na ulazu</a> ·
   <a href="{{ url_for('admin_event_print', which='knjige') }}" target="_blank">stol za preuzimanje knjiga</a> ·
   <a href="{{ url_for('admin_event_print', which='cekanje') }}" target="_blank">lista čekanja</a></p>

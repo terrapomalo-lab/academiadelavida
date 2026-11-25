@@ -1,0 +1,22 @@
+{% extends "admin/base.html" %}
+{% block title %}Posvete{% endblock %}
+{% block main %}
+<h1>Izmjena posveta</h1>
+<p><a href="{{ url_for('admin_signing') }}">→ Potpisivanje: ispis novih (popis i ceduljice)</a></p>
+<p class="muted">Ovdje možete upisati ili ispraviti ime za posvetu (npr. kad netko javi ime naknadno). Prazno polje = bez posvete.
+Izmijenjena posveta automatski se pojavljuje na sljedećem ispisu „samo nove“, označena kao IZMIJENJENA POSVETA.
+{% if last %}Zadnji popis predan na potpisivanje: {{ last.strftime('%d. %m. %Y. %H:%M') }}.{% endif %}</p>
+<p><label>Brzo traženje po imenu: <input id="ded-filter" type="search" placeholder="npr. Keser"></label></p>
+<div class="tbl"><table id="ded-table">
+<thead><tr><th>Naručitelj</th><th>Broj</th><th>Kom.</th><th>Preuzimanje</th><th>Uplata</th><th>Posveta</th></tr></thead>
+<tbody>{% for x in rows %}
+<tr>
+  <td>{{ x.buyer }}</td><td>{{ x.ref }}</td><td>{{ x.nr }}</td><td>{{ x.how }}</td><td>{{ 'plaćeno' if x.paid else 'čeka uplatu' }}</td>
+  <td><form method="post" class="row"><input type="hidden" name="csrf" value="{{ csrf_token() }}">
+    <input type="hidden" name="kind" value="{{ x.kind }}"><input type="hidden" name="ded_id" value="{{ x.ded_id }}">
+    <div><input name="name" value="{{ x.ded }}" maxlength="80" size="24" placeholder="bez posvete"></div>
+    <div><button class="btn sm">Spremi</button></div></form>
+    {% if x.edited_dt %}<span class="muted">izmijenjeno {{ x.edited_dt.strftime('%d. %m. %H:%M') }}</span>{% endif %}</td>
+</tr>{% endfor %}</tbody></table></div>
+<script src="{{ url_for('static', filename='admin-filter.js') }}"></script>
+{% endblock %}

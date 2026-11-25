@@ -7,6 +7,7 @@ import io
 import os
 import secrets
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import click
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
@@ -807,34 +808,107 @@ def create_app(overrides=None):
                                public_url=cfg["BASE_URL"] + url_for("event_page"))
 
     # --- potpisivanje knjiga: jedan red / jedna ceduljica po primjerku (predstavljanje + knjige uz donaciju)
-    def _signing_rows(con, only_paid):
+    def _signing_rows(con, only_paid, since=None):
+        edits = {(e["kind"], e["ded_id"]): e["edited_at"] for e in con.execute(
+            "SELECT kind, ded_id, MAX(edited_at) AS edited_at FROM dedication_edits GROUP BY kind, ded_id")}
         rows = []
         for r in con.execute("SELECT * FROM event_regs WHERE book_qty>0 AND book_status IN ('pending','paid')").fetchall():
             if only_paid and r["book_status"] != "paid":
                 continue
-            names = E.dedications(con, r["id"])
-            for i, n in enumerate(names, 1):
-                rows.append({"ded": "" if n == E.NO_DEDICATION else n, "buyer": r["full_name"], "ref": r["reference"],
-                             "nr": f"{i}/{len(names)}", "how": "preuzimanje na predstavljanju",
-                             "paid": r["book_status"] == "paid"})
+            ds = con.execute("SELECT id, name FROM event_dedications WHERE reg_id=? ORDER BY pos", (r["id"],)).fetchall()
+            for i, d in enumerate(ds, 1):
+                rows.append({"kind": "event", "ded_id": d["id"], "ded": "" if d["name"] == E.NO_DEDICATION else d["name"],
+                             "buyer": r["full_name"], "ref": r["reference"], "nr": f"{i}/{len(ds)}",
+                             "how": "preuzimanje na predstavljanju", "paid": r["book_status"] == "paid",
+                             "created": r["created_at"], "edited": edits.get(("event", d["id"]))})
         for o in con.execute("SELECT * FROM book_orders WHERE status IN ('pending','paid')").fetchall():
             if only_paid and o["status"] != "paid":
                 continue
-            names = S.book_dedications(con, o["id"]) or [""] * o["qty"]
-            for i, n in enumerate(names, 1):
-                rows.append({"ded": n, "buyer": o["full_name"], "ref": o["reference"], "nr": f"{i}/{len(names)}",
-                             "how": f"BOX NOW: {o['locker']}", "paid": o["status"] == "paid"})
+            ds = con.execute("SELECT id, name FROM book_dedications WHERE order_id=? ORDER BY pos", (o["id"],)).fetchall()
+            items = [(d["id"], d["name"]) for d in ds] or [(None, "")] * o["qty"]
+            for i, (did, n) in enumerate(items, 1):
+                rows.append({"kind": "book", "ded_id": did, "ded": n, "buyer": o["full_name"], "ref": o["reference"],
+                             "nr": f"{i}/{len(items)}", "how": f"BOX NOW: {o['locker']}", "paid": o["status"] == "paid",
+                             "created": o["created_at"], "edited": edits.get(("book", did))})
+        for x in rows:
+            x["created_dt"] = _ts(x["created"])
+            x["edited_dt"] = _ts(x["edited"]) if x["edited"] else None
+        if since:
+            # nove narudžbe nakon zadnjeg predanog popisa + one kojima je posveta naknadno promijenjena
+            rows = [x for x in rows if x["created_dt"] >= since or (x["edited_dt"] and x["edited_dt"] >= since)]
         # s posvetom abecedno po imenu za posvetu, zatim bez posvete po naručitelju
         rows.sort(key=lambda x: (0, x["ded"].lower()) if x["ded"] else (1, x["buyer"].lower()))
         return rows
 
+    _ZG = ZoneInfo("Europe/Zagreb")
+
+    def _ts(v):
+        """ISO zapis iz baze ili iz obrasca -> datum i vrijeme u hrvatskoj zoni (bez zone = hrvatsko vrijeme)."""
+        d = datetime.fromisoformat(v)
+        return (d.replace(tzinfo=_ZG) if d.tzinfo is None else d).astimezone(_ZG)
+
+    def _parse_since(v):
+        v = (v or "").strip()
+        if not v:
+            return None
+        try:
+            return _ts(v)
+        except ValueError:
+            return None
+
     @app.get("/admin/potpisivanje")
     @admin_required
     def admin_signing():
+        con = DB.get_db()
         only_paid = request.args.get("placeno") == "1"
-        rows = _signing_rows(DB.get_db(), only_paid)
-        return render_template("admin/signing.html", rows=rows, only_paid=only_paid,
-                               slips=request.args.get("ceduljice") == "1")
+        last = con.execute("SELECT created_at FROM signing_batches ORDER BY id DESC LIMIT 1").fetchone()
+        mode = request.args.get("nove", "1" if last else "0")
+        since = None
+        if mode == "1":
+            since = _parse_since(request.args.get("od")) or (_ts(last["created_at"]) if last else None)
+        rows = _signing_rows(con, only_paid, since)
+        return render_template("admin/signing.html", rows=rows, only_paid=only_paid, since=since,
+                               last=_ts(last["created_at"]) if last else None, upto=DB.now_iso(),
+                               slips=request.args.get("ceduljice") == "1", mode=mode)
+
+    @app.post("/admin/potpisivanje/predano")
+    @admin_required
+    def admin_signing_done():
+        con = DB.get_db()
+        # vrijeme kad je popis otvoren (ne kad je kliknuto), da se ne izgubi prijava pristigla u međuvremenu
+        upto = _parse_since(request.form.get("upto")) or _ts(DB.now_iso())
+        con.execute("INSERT INTO signing_batches(created_at, actor) VALUES (?,?)", (upto.isoformat(), g.admin))
+        DB.audit(con, g.admin, "signing_batch", upto.isoformat())
+        flash(f"Zabilježeno: sve zaprimljeno do {upto:%d. %m. %Y. %H:%M} predano je na potpisivanje. "
+              "Sljedeći ispis „samo nove“ počinje od tog trenutka.", "ok")
+        return redirect(url_for("admin_dedications"))
+
+    @app.route("/admin/posvete", methods=["GET", "POST"])
+    @admin_required
+    def admin_dedications():
+        con = DB.get_db()
+        if request.method == "POST":
+            kind = request.form.get("kind")
+            did = int(request.form.get("ded_id", "0") or 0)
+            name = " ".join(request.form.get("name", "").split())[:80]
+            table = {"event": "event_dedications", "book": "book_dedications"}.get(kind)
+            if table and did:
+                val = name or (E.NO_DEDICATION if kind == "event" else "")
+                con.execute(f"UPDATE {table} SET name=? WHERE id=?", (val, did))
+                con.execute("INSERT INTO dedication_edits(kind, ded_id, edited_at) VALUES (?,?,?)", (kind, did, DB.now_iso()))
+                DB.audit(con, g.admin, "dedication_edit", f"{kind} {did} {val}")
+                flash(f"Posveta je spremljena: {val or 'bez posvete'}. Pojavit će se na sljedećem ispisu novih.", "ok")
+            return redirect(url_for("admin_dedications"))
+        # starije narudžbe uz donaciju (prije polja za posvetu) nemaju redove posveta – dodaj prazne da se mogu upisati
+        for o in con.execute("SELECT id, qty FROM book_orders WHERE status IN ('pending','paid') AND NOT EXISTS "
+                             "(SELECT 1 FROM book_dedications d WHERE d.order_id=book_orders.id)").fetchall():
+            for pos in range(1, o["qty"] + 1):
+                con.execute("INSERT INTO book_dedications(order_id, pos, name) VALUES (?,?,'')", (o["id"], pos))
+        rows = _signing_rows(con, False)
+        rows.sort(key=lambda x: x["buyer"].lower())
+        last = con.execute("SELECT created_at FROM signing_batches ORDER BY id DESC LIMIT 1").fetchone()
+        return render_template("admin/dedications.html", rows=[r for r in rows if r["ded_id"]],
+                               last=_ts(last["created_at"]) if last else None)
 
     @app.get("/admin/predstavljanje/ispis/<which>")
     @admin_required

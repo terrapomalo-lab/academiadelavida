@@ -11,3 +11,7 @@ td.box{width:8mm}
 .slip-ded{font-size:20pt;font-weight:bold;margin-bottom:3mm;line-height:1.15}
 .slip-meta{font-size:10pt;margin-top:1mm}
 @media print{body{margin:10mm}.slips{gap:0}}
+.noprint{background:#f4f1ea;border:1px solid #ccc;padding:3mm 5mm;margin-bottom:5mm}
+.noprint .muted{color:#555;font-size:9.5pt}
+.noprint form.done{margin-top:3mm;padding-top:3mm;border-top:1px solid #ccc}
+.noprint button{font-size:11pt;padding:1.5mm 4mm;cursor:pointer}

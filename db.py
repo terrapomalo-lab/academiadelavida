@@ -141,6 +141,21 @@ CREATE TABLE IF NOT EXISTS book_dedications (
   name TEXT NOT NULL                       -- prazno = bez posvete
 );
 
+-- Predaja popisa za potpisivanje (sljedeći ispis "samo nove" počinje od zadnje predaje)
+CREATE TABLE IF NOT EXISTS signing_batches (
+  id INTEGER PRIMARY KEY,
+  created_at TEXT NOT NULL,
+  actor TEXT
+);
+
+-- Naknadne izmjene posveta (da se izmijenjena posveta pojavi na sljedećem ispisu novih)
+CREATE TABLE IF NOT EXISTS dedication_edits (
+  id INTEGER PRIMARY KEY,
+  kind TEXT NOT NULL,                      -- event | book
+  ded_id INTEGER NOT NULL,
+  edited_at TEXT NOT NULL
+);
+
 -- Red poruka: sve e-poruke prolaze kroz ovu tablicu (ponovno slanje ako slanje zakaže)
 CREATE TABLE IF NOT EXISTS outbox (
   id INTEGER PRIMARY KEY,

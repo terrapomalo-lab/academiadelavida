@@ -817,3 +817,50 @@ def test_signing_list_and_slips(env):
     s = c.get("/admin/potpisivanje?ceduljice=1").get_data(as_text=True)
     assert s.count('class="slip"') == 3 and "primjerak 1/2" in s and "built-in" not in s + h
     assert c.get("/admin/potpisivanje?placeno=1").get_data(as_text=True).count("<tr><td class=\"box\">") == 0
+
+
+def test_signing_only_new_and_dedication_edit(env):
+    app, c, con = env
+    ev_setup(app)
+    c.post("/api/predstavljanje", data=ev_form(names=["Zora", ""]))                          # ispisano ranije
+    c.post("/api/predstavljanje", data=ev_form(names=["Irena"], ime="Irena Keser", email="ik@example.com"))
+    con.execute("UPDATE event_regs SET created_at='2026-11-24T10:00:00+01:00'")
+    tok = login(c)
+    # prvi put: popis još nije označen kao predan -> upisuje se vrijeme ispisa (hrvatsko vrijeme)
+    h = c.get("/admin/potpisivanje?nove=1&od=2026-11-24T18:00").get_data(as_text=True)
+    assert "Zora" not in h[h.index("<tbody>"):] and "primjeraka: 0" in h
+    c.post("/api/predstavljanje", data=ev_form(names=["Marko"], ime="Novi Kupac", email="novi@example.com"))
+    # izmjena posvete za stariju prijavu
+    did = con.execute("SELECT d.id FROM event_dedications d JOIN event_regs r ON r.id=d.reg_id "
+                      "WHERE r.full_name='Irena Keser'").fetchone()["id"]
+    c.post("/admin/posvete", data={"csrf": tok, "kind": "event", "ded_id": did, "name": "  Irena   Keser "})
+    assert con.execute("SELECT name FROM event_dedications WHERE id=?", (did,)).fetchone()["name"] == "Irena Keser"
+    h = c.get("/admin/potpisivanje?nove=1&od=2026-11-24T18:00").get_data(as_text=True)
+    b = h[h.index("<tbody>"):]
+    assert "Marko" in b and "Irena Keser" in b and "IZMIJENJENA POSVETA" in b and "Zora" not in b
+    # sve od početka
+    b = c.get("/admin/potpisivanje?nove=0").get_data(as_text=True)
+    assert all(n in b for n in ("Zora", "Marko", "Irena Keser"))
+    # označi predano -> sljedeći "samo nove" je prazan, dok se ne pojavi nova prijava
+    r = c.post("/admin/potpisivanje/predano", data={"csrf": tok, "upto": "2099-01-01T00:00:00+01:00"})
+    assert r.status_code == 302
+    h = c.get("/admin/potpisivanje").get_data(as_text=True)
+    assert "primjeraka: 0" in h and "zadnji predani popis: 01. 01. 2099. 00:00" in h
+    # prazno polje = bez posvete
+    c.post("/admin/posvete", data={"csrf": tok, "kind": "event", "ded_id": did, "name": ""})
+    assert con.execute("SELECT name FROM event_dedications WHERE id=?", (did,)).fetchone()["name"] == "bez posvete"
+    assert c.get("/admin/posvete").status_code == 200
+
+
+def test_dedication_page_backfills_old_book_orders(env):
+    app, c, con = env
+    c.post("/api/knjiga", data=MultiDict(book_form(kolicina="2", iznos="76,00")))
+    oid = con.execute("SELECT id FROM book_orders").fetchone()["id"]
+    con.execute("DELETE FROM book_dedications WHERE order_id=?", (oid,))     # narudžba iz vremena prije polja za posvetu
+    tok = login(c)
+    h = c.get("/admin/posvete").get_data(as_text=True)
+    assert con.execute("SELECT COUNT(*) FROM book_dedications WHERE order_id=?", (oid,)).fetchone()[0] == 2
+    did = con.execute("SELECT id FROM book_dedications WHERE order_id=? AND pos=1", (oid,)).fetchone()["id"]
+    c.post("/admin/posvete", data={"csrf": tok, "kind": "book", "ded_id": did, "name": "Sibila"})
+    s = c.get("/admin/potpisivanje?nove=0&ceduljice=1").get_data(as_text=True)
+    assert "Sibila" in s and s.count('class="slip"') == 2
