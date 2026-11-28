@@ -366,7 +366,8 @@ def email_reminder(cfg, r, names):
     if r["book_qty"] and r["book_status"] == "paid":
         book = f"\nKnjigu s posvetom ({r['book_qty']} kom.) preuzimate na predstavljanju.\n"
     elif r["book_qty"] and r["book_status"] == "pending":
-        book = f"\nUplatu za knjigu s posvetom ({r['reference']}) još nismo zaprimili.\n"
+        # uplate se uvoze ručno s izvoda, pa podsjetnik ne smije tvrditi da uplata nije stigla
+        book = f"\nKnjigu s posvetom ({r['book_qty']} kom.) preuzimate na predstavljanju.\n"
     b = (f"Dobar dan, {r['full_name']},\n\npodsjećamo vas na predstavljanje knjige „{ev(cfg)['title']}”.\n\n"
          f"Kada i gdje: {_when(cfg)}.\n\n{SEATING_NOTE}\n" + book +
          f"\nAko ne možete doći, molimo vas da se odjavite, kako bi mjesto dobio netko s liste čekanja:\n{_cancel_link(cfg, r)}"
